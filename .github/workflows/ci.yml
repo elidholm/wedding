@@ -246,3 +246,29 @@ jobs:
       - name: Run taplo format check
         if: steps.check.outputs.found == 'true'
         run: git ls-files '*.toml' | xargs taplo fmt --check
+
+  actions-lint:
+    name: GitHub Actions lint (actionlint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check for workflow files
+        id: check
+        run: |
+          if git ls-files '.github/workflows/*.yml' '.github/workflows/*.yaml' | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No workflow files found yet — skipping actions lint."
+          fi
+
+      - name: Download actionlint
+        if: steps.check.outputs.found == 'true'
+        run: |
+          bash <(curl -sSf https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+
+      - name: Run actionlint
+        if: steps.check.outputs.found == 'true'
+        run: ./actionlint -color
