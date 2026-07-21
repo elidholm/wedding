@@ -32,7 +32,7 @@ jobs:
 
       - name: Install uv
         if: steps.check.outputs.found == 'true'
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
@@ -67,7 +67,7 @@ jobs:
 
       - name: Install uv
         if: steps.check.outputs.found == 'true'
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
@@ -98,7 +98,7 @@ jobs:
 
       - name: Set up Python
         if: steps.check.outputs.found == 'true'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -129,7 +129,7 @@ jobs:
 
       - name: Set up Node
         if: steps.check.outputs.found == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
@@ -175,7 +175,7 @@ jobs:
 
       - name: Run markdownlint-cli2
         if: steps.check.outputs.found == 'true'
-        uses: DavidAnson/markdownlint-cli2-action@v19
+        uses: DavidAnson/markdownlint-cli2-action@v24
         with:
           globs: '**/*.md'
 
@@ -231,7 +231,7 @@ jobs:
 
       - name: Set up Python
         if: steps.check.outputs.found == 'true'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
