@@ -1,0 +1,248 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# Cancel superseded runs on the same branch/PR to save CI minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-lint:
+    name: Python lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for pyproject.toml
+        id: check
+        run: |
+          if [ -f pyproject.toml ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No pyproject.toml found yet — skipping Python lint."
+          fi
+
+      - name: Install uv
+        if: steps.check.outputs.found == 'true'
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies
+        if: steps.check.outputs.found == 'true'
+        run: uv sync --all-extras --dev
+
+      - name: Ruff check
+        if: steps.check.outputs.found == 'true'
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        if: steps.check.outputs.found == 'true'
+        run: uv run ruff format --check .
+
+  python-test:
+    name: Python tests (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for project and tests
+        id: check
+        run: |
+          if [ -f pyproject.toml ] && [ -d tests ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No pyproject.toml/tests directory found yet — skipping Python tests."
+          fi
+
+      - name: Install uv
+        if: steps.check.outputs.found == 'true'
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies
+        if: steps.check.outputs.found == 'true'
+        run: uv sync --all-extras --dev
+
+      - name: Run pytest
+        if: steps.check.outputs.found == 'true'
+        run: uv run pytest
+
+  html-lint:
+    name: HTML/Jinja lint (djlint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for HTML files
+        id: check
+        run: |
+          if git ls-files '*.html' | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No HTML files found yet — skipping HTML lint."
+          fi
+
+      - name: Set up Python
+        if: steps.check.outputs.found == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install djlint
+        if: steps.check.outputs.found == 'true'
+        run: pip install djlint
+
+      - name: Run djlint
+        if: steps.check.outputs.found == 'true'
+        run: djlint . --profile=jinja
+
+  css-lint:
+    name: CSS lint (stylelint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for CSS files
+        id: check
+        run: |
+          if git ls-files '*.css' | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No CSS files found yet — skipping CSS lint."
+          fi
+
+      - name: Set up Node
+        if: steps.check.outputs.found == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install stylelint
+        if: steps.check.outputs.found == 'true'
+        run: npm install --no-save stylelint stylelint-config-standard
+
+      - name: Create minimal stylelint config (if none exists)
+        if: steps.check.outputs.found == 'true'
+        run: |
+          if ! git ls-files | grep -qE '^\.stylelintrc|stylelint\.config\.'; then
+            echo '{ "extends": "stylelint-config-standard" }' > .stylelintrc.ci.json
+            echo "STYLELINT_CONFIG=.stylelintrc.ci.json" >> "$GITHUB_ENV"
+          else
+            echo "STYLELINT_CONFIG=" >> "$GITHUB_ENV"
+          fi
+
+      - name: Run stylelint
+        if: steps.check.outputs.found == 'true'
+        run: |
+          if [ -n "$STYLELINT_CONFIG" ]; then
+            npx stylelint "**/*.css" --config "$STYLELINT_CONFIG"
+          else
+            npx stylelint "**/*.css"
+          fi
+
+  markdown-lint:
+    name: Markdown lint (markdownlint-cli2)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for Markdown files
+        id: check
+        run: |
+          if git ls-files '*.md' | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Markdown files found — skipping Markdown lint."
+          fi
+
+      - name: Run markdownlint-cli2
+        if: steps.check.outputs.found == 'true'
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: '**/*.md'
+
+  shell-lint:
+    name: Shell lint (shellcheck + shfmt)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for shell scripts
+        id: check
+        run: |
+          if git ls-files '*.sh' | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No shell scripts found yet — skipping shell lint."
+          fi
+
+      - name: Run shellcheck
+        if: steps.check.outputs.found == 'true'
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: '.'
+
+      - name: Install shfmt
+        if: steps.check.outputs.found == 'true'
+        run: |
+          curl -sSL "https://github.com/mvdan/sh/releases/latest/download/shfmt_v3.9.0_linux_amd64" -o /usr/local/bin/shfmt
+          chmod +x /usr/local/bin/shfmt
+
+      - name: Run shfmt (format check)
+        if: steps.check.outputs.found == 'true'
+        run: git ls-files '*.sh' | xargs shfmt -d
+
+  toml-lint:
+    name: TOML lint (taplo)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for TOML files
+        id: check
+        run: |
+          if git ls-files '*.toml' | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No TOML files found yet — skipping TOML lint."
+          fi
+
+      - name: Set up Python
+        if: steps.check.outputs.found == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install taplo
+        if: steps.check.outputs.found == 'true'
+        run: pip install taplo
+
+      - name: Run taplo lint
+        if: steps.check.outputs.found == 'true'
+        run: git ls-files '*.toml' | xargs taplo lint
+
+      - name: Run taplo format check
+        if: steps.check.outputs.found == 'true'
+        run: git ls-files '*.toml' | xargs taplo fmt --check
