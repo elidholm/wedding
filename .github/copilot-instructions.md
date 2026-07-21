@@ -48,6 +48,7 @@ wedding/
 ├── static/                    # CSS/JS/images
 └── run.py                     # entrypoint, calls create_app()
 ```
+
 Keep routes thin: they call into data-layer / service functions rather than
 embedding business logic directly.
 
