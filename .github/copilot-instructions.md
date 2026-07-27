@@ -20,6 +20,13 @@ guest gets a limited number of photo "shots").
 - **Dependency & project management**: [uv](https://docs.astral.sh/uv/) only.
   Dependencies live in `pyproject.toml` (+ `uv.lock`). Never use `pip install`,
   `venv`, or `requirements.txt` directly — always go through `uv`.
+- **Configuration**: read from environment variables via a `.env` file
+  (loaded with `python-dotenv`) and centralized in `app/config.py`'s
+  `AppConfig` (a pydantic `BaseModel`). `.env` itself is gitignored — never
+  commit real values. `AppConfig` uses lowercase field names, so `create_app`
+  copies each field into `app.config[...]` under the matching uppercase key
+  (Flask's `from_object()` only picks up uppercase attributes, so it can't be
+  used directly here).
 - **Data storage**: no real database yet. Use in-memory Python data structures
   behind a small data-access layer (see below) so it's a localized swap later.
   Do not introduce a DB/ORM unless explicitly instructed.
@@ -34,20 +41,48 @@ Use the Flask application-factory pattern with one blueprint per feature area:
 ```text
 wedding/
 ├── .github/copilot-instructions.md
-├── pyproject.toml            # deps & project metadata (managed via uv)
+├── pyproject.toml              # deps & project metadata (managed via uv)
 ├── uv.lock
 ├── app/
-│   ├── __init__.py           # create_app() factory, registers blueprints
-│   ├── data/store.py         # in-memory mock data + accessor
-│   │                         #                       functions (DB swap point)
-│   ├── rsvp/                 # /rsvp/<token> flow
-│   ├── info/                 # schedule, food, seating, conversation questions
-│   ├── photos/                # photo vault feature
-│   └── admin/                 # organizer view
-├── templates/                 # Jinja templates, mirror blueprint structure
-├── static/                    # CSS/JS/images
-└── run.py                     # entrypoint, calls create_app()
+│   ├── __init__.py             # intentionally empty (no logic in __init__ files)
+│   ├── config.py               # AppConfig (pydantic):
+│   │                           #      HOST/PORT/FLASK_ENV/APP_NAME from .env
+│   ├── web_server.py           # create_app(config) factory
+│   ├── main.py                 # entrypoint: run via `uv run python app/main.py`
+│   ├── data/store.py           # in-memory mock data + accessor
+│   │                           #                       functions (DB swap point)
+│   ├── main/                   # landing/home page blueprint
+│   │   ├── __init__.py         # intentionally empty
+│   │   └── routes.py           # defines `bp` and the index route rendering
+│   │                           #                             templates/index.html
+│   ├── rsvp/                   # /rsvp/<token> flow
+│   ├── info/                   # schedule, food, seating, conversation questions
+│   ├── photos/                 # photo vault feature
+│   ├── admin/                  # organizer view
+│   ├── templates/              # Jinja templates, mirror blueprint structure
+│   └── static/                 # CSS/JS/images
 ```
+
+Each feature blueprint follows the `main/` pattern: a package whose
+`__init__.py` stays **empty** (no logic, no imports — this is a strict
+project rule, see below) and whose `routes.py` defines both the `Blueprint`
+instance and its views, registered in `create_app()`.
+
+**Important — flat imports & no logic in `__init__.py`:**
+
+- Modules under `app/` import each other with flat, non-package-qualified
+  paths (e.g. `from config import AppConfig`, `from main.routes import bp`),
+  not `from app.config import ...`. This only resolves correctly because the
+  app is always launched as `uv run python app/main.py` from the repo root,
+  which puts `app/` itself (not the repo root) at the front of `sys.path`.
+  Do not "fix" these to package-style imports, and do not run the app via
+  `python -m app.main` or similar — mixing both import styles can cause
+  Python to load the same module twice under different names, silently
+  breaking blueprint registration.
+- Every `__init__.py` under `app/` (including `app/__init__.py` and
+  `app/main/__init__.py`) must stay completely empty — no `Blueprint(...)`
+  instantiation, no imports. Define blueprints and routes in `routes.py`
+  instead.
 
 Keep routes thin: they call into data-layer / service functions rather than
 embedding business logic directly.
@@ -86,10 +121,14 @@ embedding business logic directly.
 uv sync                               # install/sync dependencies
 uv add <package>                      # add a runtime dependency
 uv add --dev <package>                # add a dev dependency (e.g. pytest)
-uv run python run.py                  # run the app
-uv run flask --app app run --debug    # alt: run via Flask CLI
+uv run python app/main.py             # run the app (must run from repo root)
 uv run pytest                         # run tests
+uv run ruff check .                   # lint
+uv run ruff format --check .          # format check
 ```
+
+First-time setup: create a `.env` file in the repo root (gitignored) with
+`FLASK_ENV`, `HOST`, `PORT`, and `APP_NAME` — see `README.md` for an example.
 
 ## Testing
 
