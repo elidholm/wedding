@@ -6,3 +6,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 *.md
+LICENSE
+Dockerfile
+docker-compose.yml
+.dockerignore
+.gitignore
+run.sh
+tests

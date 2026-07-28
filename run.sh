@@ -1,28 +1,30 @@
 #!/usr/bin/env bash
 
-app_name=wedding-app
 host_port=5000
-container_port=5000
 url="http://localhost:${host_port}/"
 MAX_ATTEMPTS=30
 RETRY_DELAY=1
 
 main() {
-  echo 'Building app image...'
-  if ! docker build -t $app_name .; then
-    echo 'error: failed to build app image' >&2
+  if [[ ! -f docker-compose.yml ]]; then
+    echo 'error: docker-compose.yml not found, run this script from the repo root' >&2
     exit 1
   fi
 
-  echo 'Starting app container...'
-  if ! docker run -d -p $host_port:$container_port $app_name:latest; then
+  echo 'Tearing down any existing containers...'
+  if ! host_port=$host_port docker compose down --remove-orphans; then
+    echo 'warning: docker compose down failed, continuing anyway' >&2
+  fi
+
+  echo 'Building and starting fresh containers...'
+  if ! host_port=$host_port docker compose up --build -d; then
     echo 'error: failed to start containers' >&2
     exit 1
   fi
 
-  echo "Waiting for the app to respond at ${url}..."
+  echo "Waiting for the app to respond @ ${url}..."
   if ! wait_for_app; then
-    echo "error: app did not respond at ${url} after ${MAX_ATTEMPTS} attempts" >&2
+    echo "error: app did not respond @ ${url} after ${MAX_ATTEMPTS} attempts" >&2
     echo 'Check the logs with: docker compose logs' >&2
     exit 1
   fi
