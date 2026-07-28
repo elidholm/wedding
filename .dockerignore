@@ -13,3 +13,4 @@ docker-compose.yml
 .gitignore
 run.sh
 tests
+Makefile
