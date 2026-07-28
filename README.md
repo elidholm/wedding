@@ -38,3 +38,9 @@ uv run ruff check .          # lint
 uv run ruff format --check . # format check
 uv run pytest                # unit tests
 ```
+
+With Docker:
+
+```bash
+./run.sh
+```

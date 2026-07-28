@@ -1,0 +1,6 @@
+---
+services:
+  web:
+    build: .
+    ports:
+      - "${host_port:-5000}:5000"

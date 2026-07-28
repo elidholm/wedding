@@ -61,6 +61,9 @@ wedding/
 │   ├── admin/                  # organizer view
 │   ├── templates/              # Jinja templates, mirror blueprint structure
 │   └── static/                 # CSS/JS/images
+├── Dockerfile                  # container image for running the app
+├── docker-compose.yml          # local dev stack (single `web` service)
+└── run.sh                      # rebuild + launch the app in Docker
 ```
 
 Each feature blueprint follows the `main/` pattern: a package whose
@@ -129,6 +132,21 @@ uv run ruff format --check .          # format check
 
 First-time setup: create a `.env` file in the repo root (gitignored) with
 `FLASK_ENV`, `HOST`, `PORT`, and `APP_NAME` — see `README.md` for an example.
+
+## Running via Docker
+
+The app can also be run containerized via Docker Compose:
+
+```bash
+./run.sh          # tears down old containers, rebuilds, and prints the link
+# or manually:
+docker compose up -d --build
+```
+
+`run.sh` tears down any existing containers, rebuilds and starts fresh ones,
+waits for the app to respond, then prints the `http://localhost:5000/` link.
+The compose setup bind-mounts the repo for live code reload and runs Flask's
+dev server — not production-grade, fine for this stage of the project.
 
 ## Testing
 
