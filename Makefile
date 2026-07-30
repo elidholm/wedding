@@ -28,6 +28,9 @@ check: fmt-check lint test ## Run fmt-check + lint + test (pre-push CI gate)
 run: ## Tear down and spin up the app via Docker Compose (./run.sh)
 	./run.sh
 
+dev: ## Tear down and spin up the app in development mode via Docker Compose (./run.sh)
+	./run.sh -d
+
 run-local: ## Run the app directly with uv, without Docker
 	uv run python src/main.py
 
