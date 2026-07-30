@@ -1,23 +1,30 @@
-FROM python:3.12-slim
+## ------------------------------- Builder Stage ------------------------------ ##
+FROM python:3.12-bookworm AS builder
 
-COPY --from=ghcr.io/astral-sh/uv:0.4.30 /uv /uvx /usr/local/bin/
+RUN apt-get update && apt-get install --no-install-recommends -y \
+        build-essential && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /wedding-app
+ADD https://astral.sh/uv/install.sh /install.sh
+RUN chmod -R 755 /install.sh && /install.sh && rm /install.sh
 
-RUN groupadd --gid 1000 app \
-    && useradd --uid 1000 --gid app --no-create-home --shell /usr/sbin/nologin app \
-    && chown -R app:app /wedding-app
+ENV PATH="/root/.local/bin:$PATH"
 
-COPY pyproject.toml uv.lock ./
-RUN uv sync --locked --no-install-project
+WORKDIR /app
 
-COPY . .
-RUN uv sync --locked
+COPY pyproject.toml ./
 
-ENV UV_CACHE_DIR=/wedding-app/.cache/uv
+RUN uv sync
 
-USER app
+## ----------------------------- Production Stage ----------------------------- ##
+FROM python:3.12-slim-bookworm AS production
 
-EXPOSE 5000
+RUN useradd --create-home appuser
+USER appuser
 
-CMD ["uv", "run", "python", "src/main.py"]
+WORKDIR /app
+
+COPY /src src
+COPY --from=builder /app/.venv .venv
+
+ENV PATH="/app/.venv/bin:$PATH"

@@ -2,5 +2,6 @@
 services:
   web:
     build: .
+    command: python src/main.py
     ports:
       - "${host_port:-5000}:5000"
