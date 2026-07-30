@@ -1,16 +1,48 @@
-.git/
-.github/
-.venv/
-__pycache__/
-*.pyc
-.pytest_cache/
-.ruff_cache/
-*.md
-LICENSE
 Dockerfile
 docker-compose.yml
+
+# Hidden files
 .dockerignore
+.git
 .gitignore
-run.sh
+.github/
+.DS_Store
+.vscode
+
+# Build artifacts
+*.pyc
+*.so
+*.egg
+*.whl
+
+# IDE files
+.idea
+*.iml
+.classpath
+.project
+
+# Log files
+*.log
+*.err
+
+# Test directories
+test
 tests
+coverage
+.pytest_cache
+
+
+# Virtual environment
+.venv
+venv
+
+
+# Cache directories
+__pycache__/
+.ruff_cache/
+
+# Project specific files
+*.md
+LICENSE
 Makefile
+run.sh
