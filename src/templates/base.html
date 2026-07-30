@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{%- block lang -%}sw{%- endblock -%}">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +10,12 @@
         rel="stylesheet"
         href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
         integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+        crossorigin="anonymous"
+        />
+        <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+        integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD"
         crossorigin="anonymous"
         />
         <link
@@ -31,7 +37,7 @@
                 </button>
                 <div class="collapse navbar-collapse" id="navbar">
                     <div class="navbar-nav">
-                        <a class="nav-item nav-link" id="home" href="{{ url_for('home') }}">Home</a>
+                        <a class="nav-item nav-link" id="home" href="{{ url_for('home') }}"><i class="bi bi-house"></i></a>
                         <a class="nav-item nav-link" id="RSVP" href="{{ url_for('rsvp.rsvp') }}">RSVP</a>
                     </div>
                 </div>
