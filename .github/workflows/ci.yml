@@ -48,6 +48,37 @@ jobs:
         if: steps.check.outputs.found == 'true'
         run: uv run ruff format --check .
 
+  python-typecheck:
+    name: Python type check (mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check for pyproject.toml
+        id: check
+        run: |
+          if [ -f pyproject.toml ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No pyproject.toml found yet — skipping Python type check."
+          fi
+
+      - name: Install uv
+        if: steps.check.outputs.found == 'true'
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies
+        if: steps.check.outputs.found == 'true'
+        run: uv sync --all-extras --dev
+
+      - name: Run mypy
+        if: steps.check.outputs.found == 'true'
+        run: uv run mypy .
+
   python-test:
     name: Python tests (pytest)
     runs-on: ubuntu-latest

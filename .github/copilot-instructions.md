@@ -160,8 +160,9 @@ make fmt           # uv run ruff format .
 make fmt-check     # uv run ruff format --check .
 make lint          # uv run ruff check .
 make lint-fix      # uv run ruff check --fix .
+make typecheck     # uv run mypy .
 make test          # uv run pytest
-make check         # fmt-check + lint + test (pre-push / CI-parity gate)
+make check         # fmt-check + lint + typecheck + test (pre-push / CI-parity gate)
 make run-local      # uv run python src/main.py  (run directly, no Docker)
 make run            # ./run.sh  (tear down + rebuild + run via Docker Compose)
 make docker         # docker compose build

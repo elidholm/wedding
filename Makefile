@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help install fmt fmt-check lint lint-fix test check run run-local docker docker-up docker-down docker-logs clean
+.PHONY: help install fmt fmt-check lint lint-fix check test ci run dev run-local docker docker-up docker-down docker-logs clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -20,10 +20,13 @@ lint: ## Lint the codebase with ruff
 lint-fix: ## Lint and auto-fix what ruff can fix
 	uv run ruff check --fix .
 
+check: ## Type-check the codebase with mypy
+	uv run mypy .
+
 test: ## Run the unit test suite with pytest
 	uv run pytest
 
-check: fmt-check lint test ## Run fmt-check + lint + test (pre-push CI gate)
+ci: fmt-check lint check test ## Run fmt-check + lint + typecheck + test (pre-push CI gate)
 
 run: ## Tear down and spin up the app via Docker Compose (./run.sh)
 	./run.sh

@@ -36,8 +36,13 @@ you configured).
 ```bash
 uv run ruff check .          # lint
 uv run ruff format --check . # format check
+uv run mypy .                # type check
 uv run pytest                # unit tests
 ```
+
+Or via the Makefile: `make lint`, `make fmt-check`, `make typecheck`, `make
+test`, or `make check` to run all of them together. Run `make help` for the
+full list of targets.
 
 With Docker:
 
