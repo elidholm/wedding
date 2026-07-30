@@ -25,7 +25,7 @@ APP_NAME=The Wedding App
 Then, from the repo root, run:
 
 ```bash
-uv run python app/main.py
+uv run python src/main.py
 ```
 
 The app will be available at `http://localhost:5000` (or whatever `HOST`/`PORT`

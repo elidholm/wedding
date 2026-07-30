@@ -21,7 +21,7 @@ guest gets a limited number of photo "shots").
   Dependencies live in `pyproject.toml` (+ `uv.lock`). Never use `pip install`,
   `venv`, or `requirements.txt` directly — always go through `uv`.
 - **Configuration**: read from environment variables via a `.env` file
-  (loaded with `python-dotenv`) and centralized in `app/config.py`'s
+  (loaded with `python-dotenv`) and centralized in `src/config.py`'s
   `AppConfig` (a pydantic `BaseModel`). `.env` itself is gitignored — never
   commit real values. `AppConfig` uses lowercase field names, so `create_app`
   copies each field into `app.config[...]` under the matching uppercase key
@@ -36,64 +36,93 @@ guest gets a limited number of photo "shots").
 
 ## Project Structure
 
-Use the Flask application-factory pattern with one blueprint per feature area:
+The project currently uses flat, single-file modules under `src/` rather
+than a package-per-feature layout — this is the **current, actual**
+convention (see below for how this may evolve as features grow):
 
 ```text
 wedding/
-├── .github/copilot-instructions.md
-├── pyproject.toml              # deps & project metadata (managed via uv)
-├── uv.lock
-├── app/
-│   ├── __init__.py             # intentionally empty (no logic in __init__ files)
-│   ├── config.py               # AppConfig (pydantic):
-│   │                           #      HOST/PORT/FLASK_ENV/APP_NAME from .env
-│   ├── web_server.py           # create_app(config) factory
-│   ├── main.py                 # entrypoint: run via `uv run python app/main.py`
-│   ├── data/store.py           # in-memory mock data + accessor
-│   │                           #                       functions (DB swap point)
-│   ├── main/                   # landing/home page blueprint
-│   │   ├── __init__.py         # intentionally empty
-│   │   └── routes.py           # defines `bp` and the index route rendering
-│   │                           #                             templates/index.html
-│   ├── rsvp/                   # /rsvp/<token> flow
-│   ├── info/                   # schedule, food, seating, conversation questions
-│   ├── photos/                 # photo vault feature
-│   ├── admin/                  # organizer view
-│   ├── templates/              # Jinja templates, mirror blueprint structure
-│   └── static/                 # CSS/JS/images
-├── Dockerfile                  # container image for running the app
-├── docker-compose.yml          # local dev stack (single `web` service)
-└── run.sh                      # rebuild + launch the app in Docker
+├── .github/
+│   ├── copilot-instructions.md
+│   ├── dependabot.yml
+│   └── workflows/ci.yml        # lint (ruff/djlint/stylelint/markdownlint/
+│                                #   shellcheck+shfmt/taplo/actionlint) + pytest
+├── src/
+│   ├── __init__.py              # intentionally empty (no logic here)
+│   ├── config.py                # AppConfig (pydantic):
+│   │                            #      HOST/PORT/FLASK_ENV/APP_NAME from .env
+│   ├── web_server.py            # create_app(config) factory; defines the
+│   │                            #      "/" home route inline and registers
+│   │                            #      the rsvp blueprint
+│   ├── main.py                   # entrypoint: run via `make run-local`
+│   │                            #      (`uv run python src/main.py`)
+│   ├── rsvp.py                   # `rsvp` blueprint: flat module defining
+│   │                            #      `bp` + its route(s) directly (no
+│   │                            #      package/routes.py split — see below)
+│   ├── templates/
+│   │   ├── base.html             # shared layout, extended via {% block %}
+│   │   ├── home.html
+│   │   └── rsvp.html
+│   └── static/
+│       └── favicon.png
+├── tests/
+│   ├── conftest.py               # puts src/ on sys.path for flat imports
+│   ├── test_config.py
+│   └── test_web_server.py
+├── Makefile                      # `make help` lists all shortcuts
+├── Dockerfile                    # container image for running the app
+├── docker-compose.yml            # local dev stack (single `web` service)
+├── run.sh                        # rebuild + launch the app in Docker
+├── .editorconfig                 # shfmt reads this (2-space indent for
+│                                 #      *.sh) — shfmt has no TOML config
+│                                 #      support, so don't add a .shfmt.toml
+├── .taplo.toml                   # array_auto_collapse = false, so taplo
+│                                 #      keeps pyproject.toml's multi-line
+│                                 #      dependency arrays instead of
+│                                 #      collapsing them to one line
+├── pyproject.toml                # deps & project metadata (managed via uv)
+└── uv.lock
 ```
 
-Each feature blueprint follows the `main/` pattern: a package whose
-`__init__.py` stays **empty** (no logic, no imports — this is a strict
-project rule, see below) and whose `routes.py` defines both the `Blueprint`
-instance and its views, registered in `create_app()`.
+**Blueprint pattern (current vs. future):** each feature area today is a
+single flat module (e.g. `rsvp.py`) that defines `bp = Blueprint(...)` and
+its route(s) directly in that one file — there is no `main/` or `rsvp/`
+package with a separate `routes.py` yet. If a feature area grows enough to
+warrant splitting (e.g. multiple route files, helpers, or its own mock
+data), promote it to a package following the empty-`__init__.py` +
+`routes.py` convention already established for `src/__init__.py`: an
+`__init__.py` that stays completely empty (no `Blueprint(...)`
+instantiation, no imports) and a `routes.py` that defines the blueprint and
+views. Don't introduce this extra structure prematurely for a feature
+that's still a single small file.
 
 **Important — flat imports & no logic in `__init__.py`:**
 
-- Modules under `app/` import each other with flat, non-package-qualified
-  paths (e.g. `from config import AppConfig`, `from main.routes import bp`),
-  not `from app.config import ...`. This only resolves correctly because the
-  app is always launched as `uv run python app/main.py` from the repo root,
-  which puts `app/` itself (not the repo root) at the front of `sys.path`.
-  Do not "fix" these to package-style imports, and do not run the app via
-  `python -m app.main` or similar — mixing both import styles can cause
-  Python to load the same module twice under different names, silently
-  breaking blueprint registration.
-- Every `__init__.py` under `app/` (including `app/__init__.py` and
-  `app/main/__init__.py`) must stay completely empty — no `Blueprint(...)`
-  instantiation, no imports. Define blueprints and routes in `routes.py`
-  instead.
+- Modules under `src/` import each other with flat, non-package-qualified
+  paths (e.g. `from config import AppConfig`, `from rsvp import bp`), not
+  `from src.config import ...`. This only resolves correctly because the
+  app is always launched as `uv run python src/main.py` (or `make
+  run-local`) from the repo root, which puts `src/` itself (not the repo
+  root) at the front of `sys.path`. Do not "fix" these to package-style
+  imports, and do not run the app via `python -m src.main` or similar —
+  mixing both import styles can cause Python to load the same module twice
+  under different names, silently breaking blueprint registration.
+- Every `__init__.py` under `src/` must stay completely empty — no
+  `Blueprint(...)` instantiation, no imports. Define blueprints and routes
+  in the feature's own module (or `routes.py`, once/if a feature is
+  promoted to a package) instead.
 
 Keep routes thin: they call into data-layer / service functions rather than
 embedding business logic directly.
 
-## Mock Data Layer Rules
+## Mock Data Layer Rules (planned — not yet implemented)
 
-- All fake/in-memory data lives in `app/data/store.py`, never scattered
-  across route files.
+There is no `data/store.py` or any data-access layer in the codebase yet;
+`rsvp.py` currently just renders a static template. Once real invitee/RSVP
+data is needed, follow this convention:
+
+- All fake/in-memory data should live in `src/data/store.py`, never
+  scattered across route files.
 - Expose data via functions (`get_invitee(token)`, `save_rsvp(token, data)`,
   `decrement_photo_count(token)`, etc.), not raw dict imports, so swapping in
   a real database later stays localized.
@@ -118,16 +147,28 @@ embedding business logic directly.
 - DRY templates: a `base.html` layout with `{% block %}`s and reusable
   partials for repeated UI (nav, cards, etc.).
 
-## Commands (always via uv)
+## Commands
+
+Prefer the `Makefile` shortcuts (`make help` lists all of them); the
+underlying `uv`/`docker` commands are shown alongside for reference:
 
 ```bash
-uv sync                               # install/sync dependencies
-uv add <package>                      # add a runtime dependency
-uv add --dev <package>                # add a dev dependency (e.g. pytest)
-uv run python app/main.py             # run the app (must run from repo root)
-uv run pytest                         # run tests
-uv run ruff check .                   # lint
-uv run ruff format --check .          # format check
+uv add <package>       # add a runtime dependency (no Makefile shortcut)
+uv add --dev <package> # add a dev dependency (no Makefile shortcut)
+make install       # uv sync --all-extras --dev
+make fmt           # uv run ruff format .
+make fmt-check     # uv run ruff format --check .
+make lint          # uv run ruff check .
+make lint-fix      # uv run ruff check --fix .
+make test          # uv run pytest
+make check         # fmt-check + lint + test (pre-push / CI-parity gate)
+make run-local      # uv run python src/main.py  (run directly, no Docker)
+make run            # ./run.sh  (tear down + rebuild + run via Docker Compose)
+make docker         # docker compose build
+make docker-up      # docker compose up -d
+make docker-down    # docker compose down --remove-orphans
+make docker-logs    # docker compose logs -f
+make clean          # remove __pycache__/.ruff_cache/.pytest_cache
 ```
 
 First-time setup: create a `.env` file in the repo root (gitignored) with
@@ -138,21 +179,31 @@ First-time setup: create a `.env` file in the repo root (gitignored) with
 The app can also be run containerized via Docker Compose:
 
 ```bash
-./run.sh          # tears down old containers, rebuilds, and prints the link
+make run          # or: ./run.sh
 # or manually:
 docker compose up -d --build
 ```
 
 `run.sh` tears down any existing containers, rebuilds and starts fresh ones,
 waits for the app to respond, then prints the `http://localhost:5000/` link.
-The compose setup bind-mounts the repo for live code reload and runs Flask's
-dev server — not production-grade, fine for this stage of the project.
+The `Dockerfile` runs the container as a fixed-UID (1000) non-root user —
+never remove the `USER` directive or revert to running as root.
 
 ## Testing
 
-- Add tests under `tests/` using `pytest` + Flask's test client as routes are
-  built. Run via `uv run pytest`. Don't introduce new test frameworks unless
-  necessary.
+- Tests live under `tests/` as `unittest.TestCase` classes (see existing
+  `tests/test_config.py`, `tests/test_web_server.py` for the style), run via
+  **pytest** (`uv run pytest` / `make test`) — pytest natively collects
+  `unittest.TestCase` subclasses, so both conventions coexist by design.
+- Directory/file naming mirrors `src/` directly: `src/<name>.py` →
+  `tests/test_<name>.py` (no `unit/`/`component/` subdirectories for this
+  project).
+- `tests/conftest.py` puts `src/` on `sys.path` so tests can use the same
+  flat-import style as the app itself (`from config import AppConfig`).
+  Keep this in sync if `src/` is ever renamed or moved again.
+- Keep new tests small and focused (one behavior per test method, with a
+  docstring). Don't introduce a new test framework — pytest is the runner,
+  `unittest.TestCase` is the authoring style for this project.
 
 ## Privacy
 

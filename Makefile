@@ -29,7 +29,7 @@ run: ## Tear down and spin up the app via Docker Compose (./run.sh)
 	./run.sh
 
 run-local: ## Run the app directly with uv, without Docker
-	uv run python app/main.py
+	uv run python src/main.py
 
 docker: ## Build the Docker image
 	docker compose build
