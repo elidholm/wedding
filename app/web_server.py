@@ -33,6 +33,6 @@ def create_app(config: AppConfig) -> Flask:
     @app.route("/")
     def home() -> str:
         """Render the application's landing page."""
-        return render_template("index.html", app_name=config.app_name)
+        return render_template("home.html", app_name=config.app_name)
 
     return app
