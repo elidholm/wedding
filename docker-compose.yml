@@ -5,6 +5,8 @@ services:
     command: python src/main.py
     ports:
       - "${host_port:-5000}:5000"
+    env_file:
+      - .env
     develop:
       watch:
         - action: sync
