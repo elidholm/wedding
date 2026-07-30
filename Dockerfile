@@ -20,4 +20,4 @@ USER app
 
 EXPOSE 5000
 
-CMD ["uv", "run", "python", "app/main.py"]
+CMD ["uv", "run", "python", "src/main.py"]
