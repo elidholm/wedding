@@ -1,6 +1,3 @@
-Dockerfile
-docker-compose.yml
-
 # Hidden files
 .dockerignore
 .git
@@ -31,18 +28,13 @@ tests
 coverage
 .pytest_cache
 
-
 # Virtual environment
 .venv
 venv
-
 
 # Cache directories
 __pycache__/
 .ruff_cache/
 
-# Project specific files
-*.md
-LICENSE
-Makefile
-run.sh
+# Secret files
+*.env
