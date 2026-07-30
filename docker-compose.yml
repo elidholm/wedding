@@ -5,3 +5,13 @@ services:
     command: python src/main.py
     ports:
       - "${host_port:-5000}:5000"
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app/src
+          initial_sync: true
+        - action: rebuild
+          path: ./pyproject.toml
+        - action: rebuild
+          path: ./uv.lock
