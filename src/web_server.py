@@ -26,6 +26,7 @@ def create_app(config: AppConfig) -> Flask:
     app.config["HOST"] = config.host
     app.config["PORT"] = config.port
     app.config["DEBUG"] = config.debug
+    app.config["SECRET_KEY"] = config.secret_key
 
     app.register_blueprint(rsvp_bp, url_prefix="/rsvp")
 

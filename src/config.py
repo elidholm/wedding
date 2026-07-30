@@ -13,6 +13,7 @@ class AppConfig(BaseModel):
         flask_env (str): The Flask environment (e.g., "development", "production").
         host (str): The host address to bind the Flask app to.
         port (int): The port number to bind the Flask app to.
+        secret_key (str | None): The secret key for Flask sessions, or None if not set.
         debug (bool): Whether to run the Flask app in debug mode.
     """
 
@@ -20,5 +21,6 @@ class AppConfig(BaseModel):
     flask_env: str = os.getenv("FLASK_ENV", "production")
     host: str = os.getenv("HOST", "0.0.0.0")
     port: int = int(os.getenv("PORT", "5000"))
+    secret_key: str | None = os.getenv("SECRET_KEY")
 
     debug: bool = flask_env == "development"
