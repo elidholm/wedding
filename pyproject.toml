@@ -1,11 +1,12 @@
 [project]
 name = "wedding"
-version = "0.1.5"
+version = "0.2.0"
 description = "Digital hub for our wedding: RSVP via personal QR code, day-of info, and more fun features TBD."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "flask>=3.0",
+  "pydantic-settings>=2.14.2",
   "pydantic>=2.13.4",
   "rich>=15.0.0",
 ]

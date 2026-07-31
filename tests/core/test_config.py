@@ -2,14 +2,14 @@
 
 import unittest
 
-from core.config import AppConfig, config
+from core.config import Config, config
 
 
-class TestAppConfig(unittest.TestCase):
-    """Test cases for the AppConfig class."""
+class TestConfigClass(unittest.TestCase):
+    """Test cases for the Config class."""
 
     def setUp(self):
-        self.config = AppConfig()
+        self.config = Config()
 
     def test_field_types(self):
         """Test that every field has the expected type."""
@@ -28,8 +28,8 @@ class TestConfigSingleton(unittest.TestCase):
     """Test cases for the singleton config instance."""
 
     def test_singleton_instance(self):
-        """Test that the config instance is of type AppConfig."""
-        self.assertIsInstance(config, AppConfig)
+        """Test that the config instance is of type Config."""
+        self.assertIsInstance(config, Config)
 
 
 if __name__ == "__main__":

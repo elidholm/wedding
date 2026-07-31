@@ -2,10 +2,10 @@
 
 import os
 
-from pydantic import BaseModel
+from pydantic_settings import BaseSettings
 
 
-class AppConfig(BaseModel):
+class Config(BaseSettings):
     """Runtime configuration read from the environment.
 
     Attributes:
@@ -26,4 +26,4 @@ class AppConfig(BaseModel):
     debug: bool = flask_env == "development"
 
 
-config = AppConfig()
+config = Config()
