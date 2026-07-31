@@ -2,7 +2,7 @@
 
 from flask import Flask, render_template
 
-from config import AppConfig
+from core.config import AppConfig
 from rsvp import bp as rsvp_bp
 
 

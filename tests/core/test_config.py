@@ -1,8 +1,8 @@
-"""Unit tests for the config module."""
+"""Unit tests for the core.config module."""
 
 import unittest
 
-from config import AppConfig
+from core.config import AppConfig, config
 
 
 class TestAppConfig(unittest.TestCase):
@@ -22,6 +22,14 @@ class TestAppConfig(unittest.TestCase):
     def test_debug_matches_flask_env(self):
         """Test that debug is True only when flask_env is 'development'."""
         self.assertEqual(self.config.debug, self.config.flask_env == "development")
+
+
+class TestConfigSingleton(unittest.TestCase):
+    """Test cases for the singleton config instance."""
+
+    def test_singleton_instance(self):
+        """Test that the config instance is of type AppConfig."""
+        self.assertIsInstance(config, AppConfig)
 
 
 if __name__ == "__main__":
