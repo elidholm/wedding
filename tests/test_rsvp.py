@@ -2,7 +2,7 @@
 
 import unittest
 
-from config import AppConfig
+from core.config import config
 from web_server import create_app
 
 
@@ -11,7 +11,7 @@ class TestRsvp(unittest.TestCase):
 
     def setUp(self):
         """Build a Flask app and test client for each test."""
-        self.app = create_app(AppConfig())
+        self.app = create_app(config)
         self.client = self.app.test_client()
 
     def test_post_with_valid_guest_id_redirects_to_guest_page(self):

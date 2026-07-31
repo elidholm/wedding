@@ -24,3 +24,6 @@ class AppConfig(BaseModel):
     secret_key: str | None = os.getenv("SECRET_KEY")
 
     debug: bool = flask_env == "development"
+
+
+config = AppConfig()
