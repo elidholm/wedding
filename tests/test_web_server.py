@@ -21,16 +21,6 @@ class TestCreateApp(unittest.TestCase):
         self.assertEqual(self.app.config["PORT"], config.port)
         self.assertEqual(self.app.config["DEBUG"], config.debug)
 
-    def test_home_route_returns_200(self):
-        """Test that the / route responds successfully."""
-        response = self.client.get("/")
-        self.assertEqual(response.status_code, 200)
-
-    def test_rsvp_route_is_permanent_redirect(self):
-        """Test that the /rsvp route responds with a permanent redirect."""
-        response = self.client.get("/rsvp")
-        self.assertEqual(response.status_code, 308)
-
 
 if __name__ == "__main__":
     unittest.main()

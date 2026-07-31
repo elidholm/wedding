@@ -1,9 +1,8 @@
 """Application factory for the wedding app."""
 
-from flask import Flask, render_template
+from flask import Flask
 
 from core.config import AppConfig
-from rsvp import bp as rsvp_bp
 
 
 def create_app(config: AppConfig) -> Flask:
@@ -27,13 +26,5 @@ def create_app(config: AppConfig) -> Flask:
     app.config["PORT"] = config.port
     app.config["DEBUG"] = config.debug
     app.config["SECRET_KEY"] = config.secret_key
-
-    app.register_blueprint(rsvp_bp, url_prefix="/rsvp")
-
-    @app.route("/home")
-    @app.route("/")
-    def home() -> str:
-        """Render the application's landing page."""
-        return render_template("home.html", app_name=config.app_name)
 
     return app
