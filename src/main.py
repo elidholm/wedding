@@ -1,9 +1,8 @@
 """Entrypoint for running the wedding app directly."""
 
-from flask import render_template
-
 from core.config import config
 from core.logging import setup_logging
+from routes.home import bp as home_bp
 from rsvp import bp as rsvp_bp
 from web_server import create_app
 
@@ -11,14 +10,8 @@ from web_server import create_app
 setup_logging()
 
 app = create_app(config)
+app.register_blueprint(home_bp, url_prefix="")
 app.register_blueprint(rsvp_bp, url_prefix="/rsvp")
-
-
-@app.route("/home")
-@app.route("/")
-def home() -> str:
-    """Render the application's landing page."""
-    return render_template("home.html", app_name=config.app_name)
 
 
 def main() -> None:
