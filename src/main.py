@@ -3,7 +3,7 @@
 from core.config import config
 from core.logging import setup_logging
 from routes.home import bp as home_bp
-from rsvp import bp as rsvp_bp
+from routes.rsvp import bp as rsvp_bp
 from web_server import create_app
 
 
