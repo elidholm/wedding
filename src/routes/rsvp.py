@@ -1,5 +1,7 @@
 """The `rsvp` blueprint: page where guests can RSVP to the wedding."""
 
+from datetime import datetime
+
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 from werkzeug.wrappers import Response
 
@@ -25,7 +27,11 @@ def rsvp() -> str | Response:
             return redirect(url_for("rsvp.rsvp"))
         return redirect(url_for("rsvp.rsvp_guest", guest_id=guest_id))
 
-    return render_template("rsvp.html", app_name=current_app.config["APP_NAME"])
+    return render_template(
+        "rsvp.html",
+        app_name=current_app.config["APP_NAME"],
+        current_year=datetime.now().year,
+    )
 
 
 @bp.route("/<int:guest_id>")
@@ -39,5 +45,8 @@ def rsvp_guest(guest_id: int) -> str:
         str: The rendered HTML for the RSVP page for the specific guest.
     """
     return render_template(
-        "rsvp_guest.html", app_name=current_app.config["APP_NAME"], guest_id=guest_id
+        "rsvp_guest.html",
+        app_name=current_app.config["APP_NAME"],
+        current_year=datetime.now().year,
+        guest_id=guest_id,
     )

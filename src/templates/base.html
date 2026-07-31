@@ -24,8 +24,8 @@
         crossorigin="anonymous"
         />
     </head>
-    <body>
-        <main>
+    <body class="d-flex flex-column min-vh-100">
+        <header>
             <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
                 <button
                     class="navbar-toggler"
@@ -42,25 +42,34 @@
                     </div>
                 </div>
             </nav>
+        </header>
+
+        <main class="flex-grow-1">
             <h1 class="text-center">{% block header %}{{ app_name }} - Default Header{% endblock %}</h1>
 
             <div class="container">{% block content %}{% endblock %}</div>
-
-            <script
-                src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
-                integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
-                crossorigin="anonymous"
-                    ></script>
-            <script
-                src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-                integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-                crossorigin="anonymous"
-                    ></script>
-            <script
-                src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
-                integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
-                crossorigin="anonymous"
-                    ></script>
         </main>
+
+        <div class="container">
+            <footer class="d-flex flex-wrap justify-content-between align-items-center pt-3 mt-4 border-top">
+                <p class="text-center text-muted"><i class="fa fa-copyright"></i> {{ current_year }} {{ app_name }}.</p>
+            </footer>
+        </div>
+
+        <script
+            src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+            integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+            crossorigin="anonymous"
+                ></script>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+            integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+            crossorigin="anonymous"
+                ></script>
+        <script
+            src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+            crossorigin="anonymous"
+                ></script>
     </body>
 </html>
