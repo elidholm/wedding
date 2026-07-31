@@ -20,6 +20,7 @@ FLASK_ENV=development
 HOST=0.0.0.0
 PORT=5000
 APP_NAME=The Wedding App
+SECRET_KEY=<pick-a-random-value>
 ```
 
 Then, from the repo root, run:
@@ -41,9 +42,9 @@ uv run pytest                   # unit tests
 uv run djlint . --profile=jinja # HTML template linting
 ```
 
-Or via the Makefile: `make lint`, `make fmt-check`, `make typecheck`, `make
-test`, `make html-check` or `make check` to run all of them together. Run `make
-help` for the full list of targets.
+Or via the Makefile: `make lint`, `make fmt-check`, `make check` (mypy),
+`make test`, `make html-lint`, or `make ci` to run all of them together. Run
+`make help` for the full list of targets.
 
 With Docker Compose:
 
