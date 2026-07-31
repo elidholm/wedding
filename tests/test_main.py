@@ -14,7 +14,7 @@ class TestCreateApp(unittest.TestCase):
         self.client = app.test_client()
 
     def test_create_app_sets_config_values(self):
-        """Test that create_app copies AppConfig fields into app.config."""
+        """Test that create_app copies Config fields into app.config."""
         self.assertEqual(app.config["APP_NAME"], config.app_name)
         self.assertEqual(app.config["HOST"], config.host)
         self.assertEqual(app.config["PORT"], config.port)
