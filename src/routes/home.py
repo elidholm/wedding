@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Blueprint, current_app, render_template
 
 bp = Blueprint("home", __name__)
@@ -11,4 +13,8 @@ def home() -> str:
     Returns:
         str: The rendered HTML for the landing page.
     """
-    return render_template("home.html", app_name=current_app.config["APP_NAME"])
+    return render_template(
+        "home.html",
+        app_name=current_app.config["APP_NAME"],
+        current_year=datetime.now().year,
+    )
