@@ -8,6 +8,7 @@ from routes.contact import bp as contact_bp
 from routes.home import bp as home_bp
 from routes.itinerary import bp as itinerary_bp
 from routes.rsvp import bp as rsvp_bp
+from routes.seating import bp as seating_bp
 
 
 setup_logging()
@@ -28,6 +29,7 @@ app.register_blueprint(home_bp, url_prefix="")
 app.register_blueprint(rsvp_bp, url_prefix="/rsvp")
 app.register_blueprint(contact_bp, url_prefix="/contact")
 app.register_blueprint(itinerary_bp, url_prefix="/itinerary")
+app.register_blueprint(seating_bp, url_prefix="/seating")
 
 
 def main() -> None:
