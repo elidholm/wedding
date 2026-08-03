@@ -1,6 +1,6 @@
 [project]
 name = "wedding"
-version = "0.2.1"
+version = "0.2.2"
 description = "Digital hub for our wedding: RSVP via personal QR code, day-of info, and more fun features TBD."
 readme = "README.md"
 requires-python = ">=3.12"
