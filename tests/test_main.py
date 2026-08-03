@@ -54,6 +54,12 @@ class TestRsvpRoute(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    def test_rsvp_search_page_redirects_successfully(self):
+        """Test that GET /rsvp redirects the rsvp search page successfully."""
+        response = self.client.get("/rsvp")
+
+        self.assertEqual(response.status_code, 308)
+
     def test_rsvp_guest_page_is_registered_under_rsvp_prefix(self):
         """Test that GET /rsvp/<int:guest_id> is wired to the rsvp blueprint's guest page."""
         response = self.client.get("/rsvp/42")
@@ -97,6 +103,12 @@ class TestContactRoute(unittest.TestCase):
         """Build a Flask app and test client for each test."""
         self.client = app.test_client()
 
+    def test_contact_page_renders_successfully(self):
+        """Test that GET /contact renders the contact page successfully."""
+        response = self.client.get("/contact/")
+
+        self.assertEqual(response.status_code, 200)
+
     def test_contact_page_redirects_successfully(self):
         """Test that GET /contact redirects the contact page successfully."""
         response = self.client.get("/contact")
@@ -111,6 +123,12 @@ class TestItineraryRoute(unittest.TestCase):
         """Build a Flask app and test client for each test."""
         self.client = app.test_client()
 
+    def test_itinerary_page_renders_successfully(self):
+        """Test that GET /itinerary/ renders the itinerary page successfully."""
+        response = self.client.get("/itinerary/")
+
+        self.assertEqual(response.status_code, 200)
+
     def test_itinerary_page_redirects_successfully(self):
         """Test that GET /itinerary redirects the itinerary page successfully."""
         response = self.client.get("/itinerary")
@@ -124,6 +142,12 @@ class TestSeatingRoute(unittest.TestCase):
     def setUp(self):
         """Build a Flask app and test client for each test."""
         self.client = app.test_client()
+
+    def test_seating_page_renders_successfully(self):
+        """Test that GET /seating/ renders the seating page successfully."""
+        response = self.client.get("/seating/")
+
+        self.assertEqual(response.status_code, 200)
 
     def test_seating_page_redirects_successfully(self):
         """Test that GET /seating redirects the seating page successfully."""
