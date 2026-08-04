@@ -1,6 +1,6 @@
 """The `rsvp` blueprint: page where guests can RSVP to the wedding."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 from werkzeug.wrappers import Response
@@ -30,7 +30,7 @@ def rsvp() -> str | Response:
     return render_template(
         "rsvp.html",
         config=current_app.config["CONFIG"],
-        current_year=datetime.now().year,
+        current_year=datetime.now(tz=UTC).year,
     )
 
 
@@ -47,6 +47,6 @@ def rsvp_guest(guest_id: int) -> str:
     return render_template(
         "rsvp_guest.html",
         config=current_app.config["CONFIG"],
-        current_year=datetime.now().year,
+        current_year=datetime.now(tz=UTC).year,
         guest_id=guest_id,
     )
