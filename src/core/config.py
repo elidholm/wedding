@@ -10,7 +10,7 @@ import os
 import re
 from pathlib import Path
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ValidationError, field_validator
 from pydantic_yaml import parse_yaml_file_as
 
 _log = logging.getLogger(__name__)
@@ -96,7 +96,7 @@ class Config(BaseModel):
 
         try:
             config = parse_yaml_file_as(Config, config_file)
-        except Exception as e:
+        except ValidationError as e:
             raise RuntimeError(f"Failed to load configuration from {config_file}: {e}")
 
         for field, field_type in ENV_VAR_OVERRIDES:

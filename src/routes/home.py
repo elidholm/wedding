@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from flask import Blueprint, current_app, render_template
 
@@ -16,5 +16,5 @@ def home() -> str:
     return render_template(
         "home.html",
         config=current_app.config["CONFIG"],
-        current_year=datetime.now().year,
+        current_year=datetime.now(tz=UTC).year,
     )
