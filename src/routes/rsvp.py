@@ -29,7 +29,7 @@ def rsvp() -> str | Response:
 
     return render_template(
         "rsvp.html",
-        app_name=current_app.config["APP_NAME"],
+        config=current_app.config["CONFIG"],
         current_year=datetime.now().year,
     )
 
@@ -46,7 +46,7 @@ def rsvp_guest(guest_id: int) -> str:
     """
     return render_template(
         "rsvp_guest.html",
-        app_name=current_app.config["APP_NAME"],
+        config=current_app.config["CONFIG"],
         current_year=datetime.now().year,
         guest_id=guest_id,
     )
