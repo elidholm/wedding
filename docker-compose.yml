@@ -17,3 +17,5 @@ services:
           path: ./pyproject.toml
         - action: rebuild
           path: ./uv.lock
+        - action: rebuild
+          path: ./src/config.yml

@@ -1,8 +1,10 @@
 """Entrypoint for running the wedding app directly."""
 
+from pathlib import Path
+
 from flask import Flask
 
-from core.config import config
+from core.config import Config
 from core.logging import setup_logging
 from routes.contact import bp as contact_bp
 from routes.home import bp as home_bp
@@ -12,7 +14,10 @@ from routes.seating import bp as seating_bp
 from routes.table_info import bp as table_info_bp
 
 
-setup_logging()
+CONFIG_FILE = Path(__file__).parent / "config.yml"
+config = Config.load(CONFIG_FILE)
+
+setup_logging(config.log_level)
 
 app = Flask(
     __name__,
@@ -25,6 +30,7 @@ app.config["HOST"] = config.host
 app.config["PORT"] = config.port
 app.config["DEBUG"] = config.debug
 app.config["SECRET_KEY"] = config.secret_key
+app.config["CONFIG"] = config
 
 app.register_blueprint(home_bp, url_prefix="")
 app.register_blueprint(rsvp_bp, url_prefix="/rsvp")

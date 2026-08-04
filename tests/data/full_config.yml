@@ -1,0 +1,18 @@
+---
+app_name: Test App
+flask_env: staging
+host: 1.2.3.4
+port: 1234
+secret_key: test_secret
+log_level: WARNING
+debug: false
+wedding_couple_contact:
+  email: test@email.com
+  phone: (+46)70-123 45 67
+toast_master_contact:
+  - name: Toast Master 1
+    email: toast_master_1@wedding.com
+    phone: (+46)71-111 11 11
+  - name: Toast Master 2
+    email: toast_master_2@wedding.com
+    phone: (+46)72-222 22 22

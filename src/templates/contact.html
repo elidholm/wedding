@@ -1,11 +1,28 @@
 <!DOCTYPE html>
+{% macro render_contact_info(contact) %}
+    <ul>
+        <li><i class="fa fa-envelope"></i> - <a href="mailto:{{ contact.email }}">{{ contact.email }}</a></li>
+        <li><i class="fa fa-phone"></i> - <a href="tel:{{ contact.phone }}">{{ contact.phone }}</a></li>
+    </ul>
+{% endmacro %}
 
 {% extends "base.html" %}
 
 {% block description %}Contact information.{% endblock %}
 
-{% block header %}{{ app_name }} - Kontakta oss{% endblock %}
+{% block header %}{{ config.app_name }} - Kontakta oss{% endblock %}
 
 {% block content %}
-    <p>Här kan du hitta kontaktuppgifter till brudparet om du har frågor eller liknande.</p>
+    <p>Om du har några frågor eller funderingar kring bröllopet, tveka inte att kontakta oss!</p>
+    {% if config.wedding_couple_contact %}{{ render_contact_info(config.wedding_couple_contact) }}{% endif %}
+    {% if config.toast_master_contact %}
+    <p>För frågor gällande middagen, var vänlig kontakta kvällens toastmaster{% if config.toast_master_contact | length > 1 %}s{% endif %}:</p>
+    <ul>
+        {% for contact in config.toast_master_contact %}
+        <li>
+            <i class="fa fa-user"></i> {{ contact.name }}: {{ render_contact_info(contact) }}
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
 {% endblock %}

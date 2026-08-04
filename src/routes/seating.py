@@ -14,6 +14,6 @@ def seating() -> str:
     """
     return render_template(
         "seating.html",
-        app_name=current_app.config["APP_NAME"],
+        config=current_app.config["CONFIG"],
         current_year=datetime.now().year,
     )
