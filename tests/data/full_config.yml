@@ -6,3 +6,6 @@ port: 1234
 secret_key: test_secret
 log_level: WARNING
 debug: false
+wedding_couple_contact:
+  email: test@email.com
+  phone: (+46)70-123 45 67

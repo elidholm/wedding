@@ -1,2 +1,5 @@
 ---
 app_name: The Wedding App
+wedding_couple_contact:
+  email: wedding.couple@wedding.com
+  phone: (+46)70-123 45 67
