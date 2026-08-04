@@ -7,5 +7,9 @@
 {% block header %}{{ config.app_name }} - Kontakta oss{% endblock %}
 
 {% block content %}
-    <p>Här kan du hitta kontaktuppgifter till brudparet om du har frågor eller liknande.</p>
+    <p>Om du har några frågor eller funderingar kring bröllopet, tveka inte att kontakta oss!</p>
+    <ul>
+        <li><i class="fa fa-envelope"></i> - <a href="mailto:{{ config.wedding_couple_contact.email }}">{{ config.wedding_couple_contact.email }}</a></li>
+        <li><i class="fa fa-phone"></i> - <a href="tel:{{ config.wedding_couple_contact.phone }}">{{ config.wedding_couple_contact.phone }}</a></li>
+    </ul>
 {% endblock %}

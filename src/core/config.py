@@ -7,14 +7,17 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from pydantic_yaml import parse_yaml_file_as
 
 _log = logging.getLogger(__name__)
 
 
+EMAIL_RE = re.compile(r"^[^@]+@[^@]+\.[^@]+$")
+PHONE_RE = re.compile(r"^\(\+[0-9]+\)7[0-9]-[0-9]{3} [0-9]{2} [0-9]{2}$")
 ENV_VAR_OVERRIDES = {
     ("app_name", str),
     ("flask_env", str),
@@ -23,6 +26,25 @@ ENV_VAR_OVERRIDES = {
     ("secret_key", str),
     ("log_level", str),
 }
+
+
+class ContactInfo(BaseModel):
+    email: str
+    phone: str
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        if not EMAIL_RE.match(value):
+            raise ValueError(f"Invalid email address: {value}")
+        return value
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, value: str) -> str:
+        if not PHONE_RE.match(value):
+            raise ValueError(f"Invalid phone number: {value}")
+        return value
 
 
 class Config(BaseModel):
@@ -38,6 +60,8 @@ class Config(BaseModel):
             Defaults to None.
         log_level (str): The logging level for the application. Defaults to "INFO".
         debug (bool): Whether to run the Flask app in debug mode. Defaults to True.
+        wedding_couple_contact (ContactInfo | None): Contact information for the wedding couple.
+            Defaults to None.
     """
 
     app_name: str = "Flask App"
@@ -46,8 +70,9 @@ class Config(BaseModel):
     port: int = 5000
     secret_key: str | None = None
     log_level: str = "INFO"
-
     debug: bool = True
+
+    wedding_couple_contact: ContactInfo | None = None
 
     @staticmethod
     def load(config_file: str | Path) -> Config:

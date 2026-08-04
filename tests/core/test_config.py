@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.config import Config
+from core.config import Config, ContactInfo
 
 
 class TestConfigClassLoad(unittest.TestCase):
@@ -26,6 +26,7 @@ class TestConfigClassLoad(unittest.TestCase):
             ("secret_key", "test_secret"),
             ("log_level", "WARNING"),
             ("debug", False),
+            ("wedding_couple_contact", ContactInfo(email="test@email.com", phone="(+46)70-123 45 67")),
         ]
         for field_name, expected_value in test_fields:
             with self.subTest(field=field_name):
@@ -84,6 +85,7 @@ class TestConfigClassLoad(unittest.TestCase):
             ("secret_key", None),  # Default value
             ("log_level", "INFO"),  # Default value
             ("debug", True),  # Default value
+            ("wedding_couple_contact", None),  # Default value
         ]
         for field_name, expected_value in test_fields:
             with self.subTest(field=field_name):
@@ -126,6 +128,32 @@ class TestConfigLoadEnvOverrides(unittest.TestCase):
         """Test that SECRET_KEY in the environment overrides the default secret_key."""
         with patch.dict(os.environ, {"SECRET_KEY": "super-secret"}):
             self.assertEqual(Config.load(self.config_file).secret_key, "super-secret")
+
+
+class TestContactInfo(unittest.TestCase):
+    """Test cases for the ContactInfo class."""
+
+    def setUp(self):
+        """Set up a valid ContactInfo instance for testing."""
+        self.valid_email = "test_address@email.com"
+        self.valid_phone = "(+46)70-123 45 67"
+
+    def test_valid_email_and_phone(self):
+        """Test that a valid email and phone number are accepted."""
+        contact_info = ContactInfo(email=self.valid_email, phone=self.valid_phone)
+
+        self.assertEqual(contact_info.email, self.valid_email)
+        self.assertEqual(contact_info.phone, self.valid_phone)
+
+    def test_invalid_email_raises_value_error(self):
+        """Test that an invalid email raises a ValueError."""
+        with self.assertRaises(ValueError):
+            ContactInfo(email="invalid-email", phone=self.valid_phone)
+
+    def test_invalid_phone_raises_value_error(self):
+        """Test that an invalid phone number raises a ValueError."""
+        with self.assertRaises(ValueError):
+            ContactInfo(email=self.valid_email, phone="invalid-phone")
 
 
 if __name__ == "__main__":
