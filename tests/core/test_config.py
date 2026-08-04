@@ -2,37 +2,97 @@
 
 import os
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
-from core.config import Config, config
+from core.config import Config
 
 
-class TestConfigClass(unittest.TestCase):
-    """Test cases for the Config class."""
+class TestConfigClassLoad(unittest.TestCase):
+    """Test cases for the Config class .load() static method."""
 
-    def setUp(self):
-        self.config = Config()
+    def test_load_from_yaml_file(self):
+        """Test that the Config.load() correctly loads from a YAML file."""
+        config_file_path = Path(__file__).parent.parent / "data" / "full_config.yml"
+        loaded_config = Config.load(config_file_path)
 
-    def test_field_types(self):
-        """Test that every field has the expected type."""
-        self.assertIsInstance(self.config.app_name, str)
-        self.assertIsInstance(self.config.flask_env, str)
-        self.assertIsInstance(self.config.host, str)
-        self.assertIsInstance(self.config.port, int)
-        self.assertIsInstance(self.config.debug, bool)
+        self.assertIsInstance(loaded_config, Config)
 
-    def test_debug_matches_flask_env(self):
-        """Test that debug is True only when flask_env is 'development'."""
-        self.assertEqual(self.config.debug, self.config.flask_env == "development")
+        test_fields = [
+            ("app_name", "Test App"),
+            ("flask_env", "staging"),
+            ("host", "1.2.3.4"),
+            ("port", 1234),
+            ("secret_key", "test_secret"),
+            ("log_level", "WARNING"),
+            ("debug", False),
+        ]
+        for field_name, expected_value in test_fields:
+            with self.subTest(field=field_name):
+                actual_value = getattr(loaded_config, field_name)
+                self.assertEqual(actual_value, expected_value)
 
-    def test_secret_key_defaults_to_none_when_unset(self):
-        """Test that secret_key is None when SECRET_KEY isn't set in the environment."""
-        with patch.dict(os.environ, {}, clear=True):
-            self.assertIsNone(Config().secret_key)
+    def test_load_with_string_file_path(self):
+        """Test that Config.load() works with a string file path."""
+        config_file_path = str(Path(__file__).parent.parent / "data" / "full_config.yml")
+        loaded_config = Config.load(config_file_path)
+
+        self.assertIsInstance(loaded_config, Config)
+
+        test_fields = [
+            ("app_name", "Test App"),
+            ("flask_env", "staging"),
+            ("host", "1.2.3.4"),
+            ("port", 1234),
+            ("secret_key", "test_secret"),
+            ("log_level", "WARNING"),
+            ("debug", False),
+        ]
+        for field_name, expected_value in test_fields:
+            with self.subTest(field=field_name):
+                actual_value = getattr(loaded_config, field_name)
+                self.assertEqual(actual_value, expected_value)
+
+    def test_load_raises_runtime_error_for_missing_file(self):
+        """Test that Config.load() raises RuntimeError for a missing config file."""
+        missing_file_path = Path(__file__).parent.parent / "data" / "non_existent_config.yml"
+        with self.assertRaises(RuntimeError) as context:
+            Config.load(missing_file_path)
+
+        self.assertIn("No configuration file provided", str(context.exception))
+
+    def test_load_raises_runtime_error_for_invalid_yaml(self):
+        """Test that Config.load() raises RuntimeError for an invalid YAML file."""
+        invalid_yaml_path = Path(__file__).parent.parent / "data" / "invalid_config.yml"
+        with self.assertRaises(RuntimeError) as context:
+            Config.load(invalid_yaml_path)
+
+        self.assertIn("Failed to load configuration", str(context.exception))
+
+    def test_load_with_partial_config(self):
+        """Test that Config.load() correctly loads from a partial YAML file."""
+        partial_config_path = Path(__file__).parent.parent / "data" / "partial_config.yml"
+        loaded_config = Config.load(partial_config_path)
+
+        self.assertIsInstance(loaded_config, Config)
+
+        test_fields = [
+            ("app_name", "Test App With Partial Config"),
+            ("flask_env", "development"),  # Default value
+            ("host", "0.0.0.0"),  # Default value
+            ("port", 5000),  # Default value
+            ("secret_key", None),  # Default value
+            ("log_level", "INFO"),  # Default value
+            ("debug", True),  # Default value
+        ]
+        for field_name, expected_value in test_fields:
+            with self.subTest(field=field_name):
+                actual_value = getattr(loaded_config, field_name)
+                self.assertEqual(actual_value, expected_value)
 
 
-class TestConfigEnvOverrides(unittest.TestCase):
-    """Test cases for Config picking up values from environment variables.
+class TestConfigLoadEnvOverrides(unittest.TestCase):
+    """Test cases for Config.load() picking up values from environment variables.
 
     `pydantic_settings.BaseSettings` reads matching environment variables at
     instantiation time (not just via the `os.getenv(...)` class-level
@@ -41,20 +101,23 @@ class TestConfigEnvOverrides(unittest.TestCase):
     without needing to reload the module.
     """
 
+    def setUp(self):
+        self.config_file = Path(__file__).parent.parent / "data" / "full_config.yml"
+
     def test_app_name_env_override(self):
         """Test that APP_NAME in the environment overrides the default app_name."""
         with patch.dict(os.environ, {"APP_NAME": "Overridden App"}):
-            self.assertEqual(Config().app_name, "Overridden App")
+            self.assertEqual(Config.load(self.config_file).app_name, "Overridden App")
 
     def test_host_env_override(self):
         """Test that HOST in the environment overrides the default host."""
         with patch.dict(os.environ, {"HOST": "127.0.0.1"}):
-            self.assertEqual(Config().host, "127.0.0.1")
+            self.assertEqual(Config.load(self.config_file).host, "127.0.0.1")
 
     def test_port_env_override_is_cast_to_int(self):
         """Test that PORT in the environment overrides the default port and is an int."""
         with patch.dict(os.environ, {"PORT": "8080"}):
-            new_config = Config()
+            new_config = Config.load(self.config_file)
 
             self.assertEqual(new_config.port, 8080)
             self.assertIsInstance(new_config.port, int)
@@ -62,29 +125,7 @@ class TestConfigEnvOverrides(unittest.TestCase):
     def test_secret_key_env_override(self):
         """Test that SECRET_KEY in the environment overrides the default secret_key."""
         with patch.dict(os.environ, {"SECRET_KEY": "super-secret"}):
-            self.assertEqual(Config().secret_key, "super-secret")
-
-    def test_flask_env_override_does_not_retroactively_change_debug(self):
-        """Test that overriding FLASK_ENV per-instance does not change `debug`.
-
-        `debug` is computed once, at class-definition time, from the
-        `flask_env` value seen at import time -- it is not recomputed from
-        each instance's own (possibly overridden) `flask_env`. This test
-        documents that existing behavior rather than a desired one.
-        """
-        with patch.dict(os.environ, {"FLASK_ENV": "development"}):
-            new_config = Config()
-
-            self.assertEqual(new_config.flask_env, "development")
-            self.assertEqual(new_config.debug, Config.model_fields["debug"].default)
-
-
-class TestConfigSingleton(unittest.TestCase):
-    """Test cases for the singleton config instance."""
-
-    def test_singleton_instance(self):
-        """Test that the config instance is of type Config."""
-        self.assertIsInstance(config, Config)
+            self.assertEqual(Config.load(self.config_file).secret_key, "super-secret")
 
 
 if __name__ == "__main__":
