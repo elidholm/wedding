@@ -27,6 +27,13 @@ class TestConfigClassLoad(unittest.TestCase):
             ("log_level", "WARNING"),
             ("debug", False),
             ("wedding_couple_contact", ContactInfo(email="test@email.com", phone="(+46)70-123 45 67")),
+            (
+                "toast_master_contact",
+                [
+                    ContactInfo(name="Toast Master 1", email="toast_master_1@wedding.com", phone="(+46)71-111 11 11"),
+                    ContactInfo(name="Toast Master 2", email="toast_master_2@wedding.com", phone="(+46)72-222 22 22"),
+                ],
+            ),
         ]
         for field_name, expected_value in test_fields:
             with self.subTest(field=field_name):
@@ -135,13 +142,23 @@ class TestContactInfo(unittest.TestCase):
 
     def setUp(self):
         """Set up a valid ContactInfo instance for testing."""
+        self.name = "Test User"
         self.valid_email = "test_address@email.com"
         self.valid_phone = "(+46)70-123 45 67"
 
     def test_valid_email_and_phone(self):
         """Test that a valid email and phone number are accepted."""
+        contact_info = ContactInfo(name=self.name, email=self.valid_email, phone=self.valid_phone)
+
+        self.assertEqual(contact_info.name, self.name)
+        self.assertEqual(contact_info.email, self.valid_email)
+        self.assertEqual(contact_info.phone, self.valid_phone)
+
+    def test_missing_name_is_allowed(self):
+        """Test that a missing name is allowed and defaults to None."""
         contact_info = ContactInfo(email=self.valid_email, phone=self.valid_phone)
 
+        self.assertIsNone(contact_info.name)
         self.assertEqual(contact_info.email, self.valid_email)
         self.assertEqual(contact_info.phone, self.valid_phone)
 
@@ -154,6 +171,16 @@ class TestContactInfo(unittest.TestCase):
         """Test that an invalid phone number raises a ValueError."""
         with self.assertRaises(ValueError):
             ContactInfo(email=self.valid_email, phone="invalid-phone")
+
+    def test_missing_email_raises_value_error(self):
+        """Test that a missing email raises a ValueError."""
+        with self.assertRaises(ValueError):
+            ContactInfo(email=None, phone=self.valid_phone)
+
+    def test_missing_phone_raises_value_error(self):
+        """Test that a missing phone number raises a ValueError."""
+        with self.assertRaises(ValueError):
+            ContactInfo(email=self.valid_email, phone=None)
 
 
 if __name__ == "__main__":
