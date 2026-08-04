@@ -8,7 +8,8 @@ help: ## Show this help
 install: ## Sync all dependencies (runtime + dev) via uv
 	uv sync --all-extras --dev
 
-fmt: ## Auto-format the codebase with ruff
+fmt: ## Auto-format the codebase with ruff and isort
+	uv run isort .
 	uv run ruff format .
 
 fmt-check: ## Check formatting without writing changes (CI parity)

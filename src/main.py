@@ -13,7 +13,6 @@ from routes.rsvp import bp as rsvp_bp
 from routes.seating import bp as seating_bp
 from routes.table_info import bp as table_info_bp
 
-
 CONFIG_FILE = Path(__file__).parent / "config.yml"
 config = Config.load(CONFIG_FILE)
 

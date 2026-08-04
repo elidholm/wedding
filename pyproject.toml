@@ -14,6 +14,7 @@ dependencies = [
 [dependency-groups]
 dev = [
   "djlint>=1.43.1",
+  "isort>=8.0.1",
   "mypy>=1.11",
   "pytest>=9.1.1",
   "ruff>=0.6",
@@ -21,7 +22,11 @@ dev = [
 
 [tool.ruff]
 target-version = "py312"
-line-length = 120
+line-length = 119
+
+[tool.isort]
+profile = "black"
+line_length = 119
 
 [tool.mypy]
 python_version = "3.12"
