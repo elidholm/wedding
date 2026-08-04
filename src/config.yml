@@ -3,3 +3,10 @@ app_name: The Wedding App
 wedding_couple_contact:
   email: wedding.couple@wedding.com
   phone: (+46)70-123 45 67
+toast_master_contact:
+  - name: Toast Master 1
+    email: toast_master_1@wedding.com
+    phone: (+46)70-987 65 43
+  - name: Toast Master 2
+    email: toast_master_2@wedding.com
+    phone: (+46)70-543 21 09

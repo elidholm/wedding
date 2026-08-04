@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+{% macro render_contact_info(contact) %}
+    <ul>
+        <li><i class="fa fa-envelope"></i> - <a href="mailto:{{ contact.email }}">{{ contact.email }}</a></li>
+        <li><i class="fa fa-phone"></i> - <a href="tel:{{ contact.phone }}">{{ contact.phone }}</a></li>
+    </ul>
+{% endmacro %}
 
 {% extends "base.html" %}
 
@@ -8,8 +14,15 @@
 
 {% block content %}
     <p>Om du har några frågor eller funderingar kring bröllopet, tveka inte att kontakta oss!</p>
+    {% if config.wedding_couple_contact %}{{ render_contact_info(config.wedding_couple_contact) }}{% endif %}
+    {% if config.toast_master_contact %}
+    <p>För frågor gällande middagen, var vänlig kontakta kvällens toastmaster{% if config.toast_master_contact | length > 1 %}s{% endif %}:</p>
     <ul>
-        <li><i class="fa fa-envelope"></i> - <a href="mailto:{{ config.wedding_couple_contact.email }}">{{ config.wedding_couple_contact.email }}</a></li>
-        <li><i class="fa fa-phone"></i> - <a href="tel:{{ config.wedding_couple_contact.phone }}">{{ config.wedding_couple_contact.phone }}</a></li>
+        {% for contact in config.toast_master_contact %}
+        <li>
+            <i class="fa fa-user"></i> {{ contact.name }}: {{ render_contact_info(contact) }}
+        </li>
+        {% endfor %}
     </ul>
+    {% endif %}
 {% endblock %}

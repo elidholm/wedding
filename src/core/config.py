@@ -29,6 +29,7 @@ ENV_VAR_OVERRIDES = {
 
 
 class ContactInfo(BaseModel):
+    name: str | None = None
     email: str
     phone: str
 
@@ -62,6 +63,8 @@ class Config(BaseModel):
         debug (bool): Whether to run the Flask app in debug mode. Defaults to True.
         wedding_couple_contact (ContactInfo | None): Contact information for the wedding couple.
             Defaults to None.
+        toast_master_contact (list[ContactInfo] | None): Contact information for the toast master(s).
+            Defaults to None.
     """
 
     app_name: str = "Flask App"
@@ -73,6 +76,7 @@ class Config(BaseModel):
     debug: bool = True
 
     wedding_couple_contact: ContactInfo | None = None
+    toast_master_contact: list[ContactInfo] | None = None
 
     @staticmethod
     def load(config_file: str | Path) -> Config:
