@@ -14,9 +14,9 @@
 
 {% block content %}
     <p>Om du har några frågor eller funderingar kring bröllopet, tveka inte att kontakta oss!</p>
-    {% if config.wedding_couple_contact %}{{ render_contact_info(config.wedding_couple_contact) }}{% endif %}
-    {% if config.toast_master_contact %}
-    <p>För frågor gällande middagen, var vänlig kontakta kvällens toastmaster{% if config.toast_master_contact | length > 1 %}s{% endif %}:</p>
+    {{ render_contact_info(config.wedding_couple_contact) }}
+    {% if config.toast_master_contact | length >= 1 %}
+    <p>För frågor gällande middagen, var vänlig kontakta kvällens toastmaster{% if config.toast_master_contact | length >= 2 %}s{% endif %}:</p>
     <ul>
         {% for contact in config.toast_master_contact %}
         <li>

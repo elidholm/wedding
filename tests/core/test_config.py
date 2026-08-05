@@ -55,6 +55,14 @@ class TestConfigClassLoad(unittest.TestCase):
             ("secret_key", "test_secret"),
             ("log_level", "WARNING"),
             ("debug", False),
+            ("wedding_couple_contact", ContactInfo(email="test@email.com", phone="(+46)70-123 45 67")),
+            (
+                "toast_master_contact",
+                [
+                    ContactInfo(name="Toast Master 1", email="toast_master_1@wedding.com", phone="(+46)71-111 11 11"),
+                    ContactInfo(name="Toast Master 2", email="toast_master_2@wedding.com", phone="(+46)72-222 22 22"),
+                ],
+            ),
         ]
         for field_name, expected_value in test_fields:
             with self.subTest(field=field_name):
@@ -92,7 +100,8 @@ class TestConfigClassLoad(unittest.TestCase):
             ("secret_key", None),  # Default value
             ("log_level", "INFO"),  # Default value
             ("debug", True),  # Default value
-            ("wedding_couple_contact", None),  # Default value
+            ("wedding_couple_contact", ContactInfo(email="test@email.com", phone="(+46)70-123 45 67")),
+            ("toast_master_contact", []),  # Default value
         ]
         for field_name, expected_value in test_fields:
             with self.subTest(field=field_name):

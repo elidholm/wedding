@@ -16,8 +16,8 @@ from pydantic_yaml import parse_yaml_file_as
 _log = logging.getLogger(__name__)
 
 
-EMAIL_RE = re.compile(r"^[^@]+@[^@]+\.[^@]+$")
-PHONE_RE = re.compile(r"^\(\+[0-9]+\)7[0-9]-[0-9]{3} [0-9]{2} [0-9]{2}$")
+EMAIL_RE: re.Pattern = re.compile(r"^[^@]+@[^@]+\.[^@]+$")
+PHONE_RE: re.Pattern = re.compile(r"^\(\+[0-9]+\)7[0-9]-[0-9]{3} [0-9]{2} [0-9]{2}$")
 ENV_VAR_OVERRIDES = {
     ("app_name", str),
     ("flask_env", str),
@@ -29,6 +29,17 @@ ENV_VAR_OVERRIDES = {
 
 
 class ContactInfo(BaseModel):
+    """Contact information for a person.
+
+    Attributes:
+        name (str | None): The name of the contact person. Defaults
+            to None if not provided.
+        email (str): The email address of the contact person. Must
+            be a valid email format.
+        phone (str): The phone number of the contact person. Must
+            match the format "(+<country_code>)7X-XXX XX XX".
+    """
+
     name: str | None = None
     email: str
     phone: str
@@ -36,6 +47,7 @@ class ContactInfo(BaseModel):
     @field_validator("email")
     @classmethod
     def validate_email(cls, value: str) -> str:
+        """Validate that the email address is in a valid format."""
         if not EMAIL_RE.match(value):
             raise ValueError(f"Invalid email address: {value}")
         return value
@@ -43,6 +55,7 @@ class ContactInfo(BaseModel):
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, value: str) -> str:
+        """Validate that the phone number matches the expected format."""
         if not PHONE_RE.match(value):
             raise ValueError(f"Invalid phone number: {value}")
         return value
@@ -61,10 +74,9 @@ class Config(BaseModel):
             Defaults to None.
         log_level (str): The logging level for the application. Defaults to "INFO".
         debug (bool): Whether to run the Flask app in debug mode. Defaults to True.
-        wedding_couple_contact (ContactInfo | None): Contact information for the wedding couple.
-            Defaults to None.
-        toast_master_contact (list[ContactInfo] | None): Contact information for the toast master(s).
-            Defaults to None.
+        wedding_couple_contact (ContactInfo): Contact information for the wedding couple.
+        toast_master_contact (list[ContactInfo]): Contact information for the toast
+            master(s). Defaults to an empty list.
     """
 
     app_name: str = "Flask App"
@@ -75,8 +87,8 @@ class Config(BaseModel):
     log_level: str = "INFO"
     debug: bool = True
 
-    wedding_couple_contact: ContactInfo | None = None
-    toast_master_contact: list[ContactInfo] | None = None
+    wedding_couple_contact: ContactInfo
+    toast_master_contact: list[ContactInfo] = []
 
     @staticmethod
     def load(config_file: str | Path) -> Config:

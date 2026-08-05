@@ -1,2 +1,5 @@
 ---
 app_name: Test App With Partial Config
+wedding_couple_contact:
+  email: test@email.com
+  phone: (+46)70-123 45 67
