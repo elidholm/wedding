@@ -25,6 +25,7 @@ ENV_VAR_OVERRIDES = {
     ("port", int),
     ("secret_key", str),
     ("log_level", str),
+    ("googlemaps_key", str),
 }
 
 
@@ -65,11 +66,10 @@ class WeddingVenue(BaseModel):
     """Information about the wedding venue.
 
     Attributes:
-        name (str): The name of the wedding venue. Defaults to
-            "The Wedding Venue".
+        name (str): The name of the wedding venue.
         address (str): The address of the wedding venue.
-        city (str | None): The city where the wedding venue is
-            located. Defaults to None if not provided.
+        city (str | None): The city where the wedding venue is located. Defaults to
+            None if not provided.
     """
 
     name: str
@@ -90,6 +90,7 @@ class Config(BaseModel):
             Defaults to None.
         log_level (str): The logging level for the application. Defaults to "INFO".
         debug (bool): Whether to run the Flask app in debug mode. Defaults to True.
+        googlemaps_key (str): The Google Maps API key. Defaults to an empty string.
         wedding_couple_contact (ContactInfo): Contact information for the wedding couple.
         toast_master_contact (list[ContactInfo]): Contact information for the toast
             master(s). Defaults to an empty list.
@@ -104,6 +105,7 @@ class Config(BaseModel):
     secret_key: str | None = None
     log_level: str = "INFO"
     debug: bool = True
+    googlemaps_key: str = ""
 
     wedding_couple_contact: ContactInfo
     toast_master_contact: list[ContactInfo] = []

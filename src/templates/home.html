@@ -13,5 +13,16 @@
         <h2>Plats</h2>
         <p>Bröllopet kommer att hållas på <strong>{{ config.venue.name }}</strong>{% if config.venue.city %} i <strong>{{ config.venue.city }}</strong>{% endif %}.</p>
         <p>Adress: <strong>{{ config.venue.address }}</strong></p>
+        {% if config.googlemaps_key %}
+            <iframe
+                width="600"
+                height="450"
+                style="border:0"
+                loading="lazy"
+                allowfullscreen
+                referrerpolicy="no-referrer-when-downgrade"
+                src="https://www.google.com/maps/embed/v1/place?key={{ config.googlemaps_key }}&q={{ config.venue.name | urlencode }},{{ config.venue.address | urlencode }}">
+            </iframe>
+        {% endif %}
     {% endif %}
 {% endblock %}
