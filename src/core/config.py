@@ -61,6 +61,22 @@ class ContactInfo(BaseModel):
         return value
 
 
+class WeddingVenue(BaseModel):
+    """Information about the wedding venue.
+
+    Attributes:
+        name (str): The name of the wedding venue. Defaults to
+            "The Wedding Venue".
+        address (str): The address of the wedding venue.
+        city (str | None): The city where the wedding venue is
+            located. Defaults to None if not provided.
+    """
+
+    name: str
+    address: str
+    city: str | None = None
+
+
 class Config(BaseModel):
     """Runtime configuration read from the environment.
 
@@ -77,6 +93,8 @@ class Config(BaseModel):
         wedding_couple_contact (ContactInfo): Contact information for the wedding couple.
         toast_master_contact (list[ContactInfo]): Contact information for the toast
             master(s). Defaults to an empty list.
+        venue (WeddingVenue | None): Information about the wedding venue. Defaults to
+            None if not provided.
     """
 
     app_name: str = "Flask App"
@@ -89,6 +107,8 @@ class Config(BaseModel):
 
     wedding_couple_contact: ContactInfo
     toast_master_contact: list[ContactInfo] = []
+
+    venue: WeddingVenue | None = None
 
     @staticmethod
     def load(config_file: str | Path) -> Config:

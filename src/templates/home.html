@@ -9,4 +9,9 @@
 {% block content %}
     <p>Välkommen till Edvin & Elinores bröllopssida!</p>
     <p>Här kommer du snart kunna hitta information om bröllopet, samt OSA-formuläret.</p>
+    {% if config.venue %}
+        <h2>Plats</h2>
+        <p>Bröllopet kommer att hållas på <strong>{{ config.venue.name }}</strong>{% if config.venue.city %} i <strong>{{ config.venue.city }}</strong>{% endif %}.</p>
+        <p>Adress: <strong>{{ config.venue.address }}</strong></p>
+    {% endif %}
 {% endblock %}
