@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.config import Config, ContactInfo
+from core.config import Config, ContactInfo, WeddingVenue
 
 
 class TestConfigClassLoad(unittest.TestCase):
@@ -33,6 +33,14 @@ class TestConfigClassLoad(unittest.TestCase):
                     ContactInfo(name="Toast Master 1", email="toast_master_1@wedding.com", phone="(+46)71-111 11 11"),
                     ContactInfo(name="Toast Master 2", email="toast_master_2@wedding.com", phone="(+46)72-222 22 22"),
                 ],
+            ),
+            (
+                "venue",
+                WeddingVenue(
+                    name="The Wedding Venue",
+                    address="123 Wedding St",
+                    city="Wedding City",
+                ),
             ),
         ]
         for field_name, expected_value in test_fields:
@@ -62,6 +70,14 @@ class TestConfigClassLoad(unittest.TestCase):
                     ContactInfo(name="Toast Master 1", email="toast_master_1@wedding.com", phone="(+46)71-111 11 11"),
                     ContactInfo(name="Toast Master 2", email="toast_master_2@wedding.com", phone="(+46)72-222 22 22"),
                 ],
+            ),
+            (
+                "venue",
+                WeddingVenue(
+                    name="The Wedding Venue",
+                    address="123 Wedding St",
+                    city="Wedding City",
+                ),
             ),
         ]
         for field_name, expected_value in test_fields:
@@ -102,6 +118,7 @@ class TestConfigClassLoad(unittest.TestCase):
             ("debug", True),  # Default value
             ("wedding_couple_contact", ContactInfo(email="test@email.com", phone="(+46)70-123 45 67")),
             ("toast_master_contact", []),  # Default value
+            ("venue", None),  # Default value
         ]
         for field_name, expected_value in test_fields:
             with self.subTest(field=field_name):
@@ -190,6 +207,31 @@ class TestContactInfo(unittest.TestCase):
         """Test that a missing phone number raises a ValueError."""
         with self.assertRaises(ValueError):
             ContactInfo(email=self.valid_email, phone=None)
+
+
+class TestWeddingVenue(unittest.TestCase):
+    """Test cases for the WeddingVenue class."""
+
+    def setUp(self):
+        self.name = "The Wedding Venue"
+        self.address = "123 Wedding St"
+        self.city = "Wedding City"
+
+    def test_valid_venue(self):
+        """Test that a valid WeddingVenue instance is created correctly."""
+        venue = WeddingVenue(name=self.name, address=self.address, city=self.city)
+
+        self.assertEqual(venue.name, self.name)
+        self.assertEqual(venue.address, self.address)
+        self.assertEqual(venue.city, self.city)
+
+    def test_missing_city_is_allowed(self):
+        """Test that a missing city is allowed and defaults to None."""
+        venue = WeddingVenue(name=self.name, address=self.address)
+
+        self.assertEqual(venue.name, self.name)
+        self.assertEqual(venue.address, self.address)
+        self.assertIsNone(venue.city)
 
 
 if __name__ == "__main__":
