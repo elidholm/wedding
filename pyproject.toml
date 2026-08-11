@@ -13,11 +13,11 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "djlint>=1.43.1",
+  "djlint>=1.44.1",
   "isort>=8.0.1",
   "mypy>=1.11",
   "pytest>=9.1.1",
-  "ruff>=0.16.1",
+  "ruff>=0.16.2",
 ]
 
 [tool.ruff]
