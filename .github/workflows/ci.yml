@@ -206,7 +206,7 @@ jobs:
 
       - name: Run markdownlint-cli2
         if: steps.check.outputs.found == 'true'
-        uses: DavidAnson/markdownlint-cli2-action@v24.1.0
+        uses: DavidAnson/markdownlint-cli2-action@v24.2.0
         with:
           globs: '**/*.md'
 
