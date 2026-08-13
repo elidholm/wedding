@@ -1,6 +1,7 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help install fmt fmt-check lint lint-fix html-lint check test ci run dev run-local docker docker-up docker-down docker-logs clean
+.PHONY: help install fmt fmt-check lint lint-fix check test html-lint shell-lint toml-lint lock-check ci \
+	run dev stop run-local docker docker-up docker-down docker-logs shell clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -21,16 +22,25 @@ lint: ## Lint the codebase with ruff
 lint-fix: ## Lint and auto-fix what ruff can fix
 	uv run ruff check --fix .
 
-html-lint: ## Lint the HTML templates with djlint
-	uv run djlint . --profile=jinja
-
 check: ## Type-check the codebase with mypy
 	uv run mypy .
 
 test: ## Run the unit test suite with pytest
 	uv run pytest
 
-ci: fmt-check lint check test html-lint ## Run fmt-check + lint + typecheck + test + html-lint (pre-push CI gate)
+html-lint: ## Lint the HTML templates with djlint
+	uv run djlint . --profile=jinja
+
+shell-lint: ## Lint the shell scripts with shellcheck
+	uv run shellcheck *.sh
+
+toml-lint: ## Lint the TOML files with taplo
+	uv run taplo lint
+
+lock-check: ## Check that the uv.lock file is up to date
+	uv sync --locked
+
+ci: fmt-check lint check test html-lint shell-lint toml-lint lock-check ## Pre-push CI gate
 
 run: ## Tear down and spin up the app via Docker Compose (./run.sh)
 	./run.sh
@@ -56,6 +66,9 @@ docker-down: ## Stop containers and remove orphans
 docker-logs: ## Follow container logs
 	docker compose logs -f
 
+shell: ## Open a shell in the app container
+	docker compose exec web bash
+
 clean: ## Remove regenerable caches (__pycache__, ruff/pytest caches)
 	find . -type d -name '__pycache__' -not -path './.venv/*' -exec rm -rf {} +
-	rm -rf .ruff_cache .pytest_cache
+	rm -rf .ruff_cache .pytest_cache .mypy_cache
