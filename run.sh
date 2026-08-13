@@ -7,8 +7,31 @@ RETRY_DELAY=1
 DEV_MODE=false
 STOP=false
 
+print_usage() {
+  cat <<EOF
+
+Usage: ${0##*/} [-p <host_port>] [-d] [-s]
+  -p <host_port> : Specify the host port for the application (default: 5000)
+  -d             : Start containers in development mode (with watch)
+  -s             : Stop and remove containers, then exit
+  -h             : Display this help message
+EOF
+}
+
+print_help() {
+  echo 'This script is used to build and run the application in a Docker container.'
+  print_usage
+  exit 0
+}
+
+die() {
+  echo >&2 "Error: $*"
+  print_usage
+  exit 1
+}
+
 parse_args() {
-  OPTSTRING=p:ds
+  OPTSTRING=:p:dsh
   while getopts $OPTSTRING opt; do
     case $opt in
     p)
@@ -21,9 +44,14 @@ parse_args() {
     s)
       STOP=true
       ;;
+    h)
+      print_help
+      ;;
+    :)
+      die "Option -$OPTARG requires an argument"
+      ;;
     ?)
-      echo "Invalid option: -${OPTARG}" >&2
-      exit 1
+      die "Invalid option: -$OPTARG"
       ;;
     esac
   done
@@ -44,43 +72,37 @@ wait_for_app() {
 
 main() {
   if [[ ! -f docker-compose.yml ]]; then
-    echo 'error: docker-compose.yml not found, run this script from the repo root' >&2
-    exit 1
+    die 'docker-compose.yml not found, run this script from the repo root'
   fi
 
   parse_args "$@"
 
   echo 'Tearing down any existing containers...'
   if ! host_port=$host_port docker compose down --remove-orphans; then
-    echo 'warning: docker compose down failed, continuing anyway' >&2
+    echo 'Warning: docker compose down failed, continuing anyway' >&2
   fi
 
   if [[ $STOP == true ]]; then
-    echo 'Stopped containers, exiting.'
+    echo 'Stopped containers, exiting'
     exit 0
   fi
 
   if [[ $DEV_MODE == true ]]; then
     echo 'Starting containers in development mode...'
     if ! host_port=$host_port docker compose up --build --watch; then
-      echo 'error: failed to start containers in development mode' >&2
-      exit 1
+      die 'Failed to start containers in development mode'
     fi
   else
     echo 'Building and starting fresh containers...'
     if ! host_port=$host_port docker compose up --build -d; then
-      echo 'error: failed to start containers' >&2
-      exit 1
+      die 'Failed to start containers'
     fi
 
-    echo "Waiting for the app to respond"
+    echo 'Waiting for the app to respond...'
     if ! wait_for_app "$url/health"; then
-      echo "error: app did not respond @ ${url}/health after ${MAX_ATTEMPTS} attempts" >&2
-      echo 'Check the logs with: docker compose logs' >&2
-      exit 1
+      die "The app did not respond @ ${url}/health after ${MAX_ATTEMPTS} attempts"
     fi
 
-    echo
     echo "The application is up and running @ ${url}"
   fi
 }
