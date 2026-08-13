@@ -21,3 +21,5 @@ services:
           path: ./src/config.yml
         - action: rebuild
           path: ./Dockerfile
+    mem_limit: 512m
+    cpus: 0.5
