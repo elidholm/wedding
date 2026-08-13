@@ -8,6 +8,7 @@ help: ## Show this help
 
 install: ## Sync all dependencies (runtime + dev) via uv
 	uv sync --all-extras --dev
+	uv run pre-commit install
 
 env-init: ## Initialize the .env file with example values
 	cp --update=none .env.example .env
