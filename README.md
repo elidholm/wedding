@@ -12,16 +12,7 @@ With [uv](https://docs.astral.sh/uv/):
 uv sync
 ```
 
-Create a `.env` file in the repo root (it's gitignored, so this is local-only)
-with the following variables:
-
-```bash
-FLASK_ENV=development
-HOST=0.0.0.0
-PORT=5000
-APP_NAME=The Wedding App
-SECRET_KEY=<pick-a-random-value>
-```
+Copy `.env.example` to `.env` (`make env-init`) and edit the values as needed.
 
 Then, from the repo root, run:
 
@@ -51,3 +42,5 @@ With Docker Compose:
 ```bash
 ./run.sh
 ```
+
+Or via the Makefile: `make run` (or `make dev` for development mode).
