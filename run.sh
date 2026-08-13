@@ -58,6 +58,27 @@ parse_args() {
   shift $((OPTIND - 1))
 }
 
+preflight_checks() {
+  local file_checks=(
+    'docker-compose.yml'
+    '.env'
+  )
+
+  for file in "${file_checks[@]}"; do
+    if [[ ! -f $file ]]; then
+      die "File ${file@Q} not found. Run this script from the repo root"
+    fi
+  done
+
+  if ! docker info &>/dev/null; then
+    die 'Docker is not installed. Please install Docker to continue'
+  fi
+
+  if ! command -v curl &>/dev/null; then
+    die 'curl is not installed. Please install curl to continue'
+  fi
+}
+
 wait_for_app() {
   local url=$1
   local attempt
@@ -71,11 +92,8 @@ wait_for_app() {
 }
 
 main() {
-  if [[ ! -f docker-compose.yml ]]; then
-    die 'docker-compose.yml not found, run this script from the repo root'
-  fi
-
   parse_args "$@"
+  preflight_checks
 
   echo 'Tearing down any existing containers...'
   if ! host_port=$host_port docker compose down --remove-orphans; then
