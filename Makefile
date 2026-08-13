@@ -38,6 +38,9 @@ run: ## Tear down and spin up the app via Docker Compose (./run.sh)
 dev: ## Tear down and spin up the app in development mode via Docker Compose (./run.sh)
 	./run.sh -d
 
+stop: ## Stop and remove containers via Docker Compose (./run.sh)
+	./run.sh -s
+
 run-local: ## Run the app directly with uv, without Docker
 	uv run python src/main.py
 

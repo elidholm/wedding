@@ -5,9 +5,10 @@ url=http://localhost:${host_port}
 MAX_ATTEMPTS=30
 RETRY_DELAY=1
 DEV_MODE=false
+STOP=false
 
 parse_args() {
-  OPTSTRING=p:d
+  OPTSTRING=p:ds
   while getopts $OPTSTRING opt; do
     case $opt in
     p)
@@ -16,6 +17,9 @@ parse_args() {
       ;;
     d)
       DEV_MODE=true
+      ;;
+    s)
+      STOP=true
       ;;
     ?)
       echo "Invalid option: -${OPTARG}" >&2
@@ -49,6 +53,11 @@ main() {
   echo 'Tearing down any existing containers...'
   if ! host_port=$host_port docker compose down --remove-orphans; then
     echo 'warning: docker compose down failed, continuing anyway' >&2
+  fi
+
+  if [[ $STOP == true ]]; then
+    echo 'Stopped containers, exiting.'
+    exit 0
   fi
 
   if [[ $DEV_MODE == true ]]; then
