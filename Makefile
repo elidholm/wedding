@@ -30,7 +30,7 @@ check: ## Type-check the codebase with mypy
 	uv run mypy .
 
 test: ## Run the unit test suite with pytest
-	uv run pytest
+	uv run pytest --cov=src --cov-report=term-missing --cov-fail-under=85
 
 html-lint: ## Lint the HTML templates with djlint
 	uv run djlint . --profile=jinja

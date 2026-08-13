@@ -2,10 +2,10 @@
 name: CI
 
 on:
-  push:
-    branches: [master]
   pull_request:
     branches: [master]
+  schedule:
+    - cron: '0 0 * * 0' # Every Sunday at midnight
 
 # Cancel superseded runs on the same branch/PR to save CI minutes.
 concurrency:
@@ -122,7 +122,7 @@ jobs:
         run: uv sync --all-extras --dev
 
       - name: Run pytest
-        run: uv run pytest
+        run: uv run pytest --cov=src --cov-report=term-missing --cov-fail-under=85
 
   lockfile-check:
     name: Lockfile check (uv)
