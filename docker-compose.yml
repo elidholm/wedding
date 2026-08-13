@@ -13,13 +13,19 @@ services:
           path: ./src
           target: /app/src
           initial_sync: true
+
+        - action: sync+restart
+          path: ./src/config.yml
+          target: /app/src/config.yml
+
         - action: rebuild
           path: ./pyproject.toml
+
         - action: rebuild
           path: ./uv.lock
-        - action: rebuild
-          path: ./src/config.yml
+
         - action: rebuild
           path: ./Dockerfile
+
     mem_limit: 512m
     cpus: 0.5
