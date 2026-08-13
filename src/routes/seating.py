@@ -6,6 +6,7 @@ bp = Blueprint("seating", __name__)
 
 
 @bp.route("/")
+@bp.route("")
 def seating() -> str:
     """Render the application's "seating" page.
 

@@ -33,16 +33,11 @@ class TestRsvpRoute(unittest.TestCase):
         self.client = app.test_client()
 
     def test_rsvp_search_page_is_registered_under_rsvp_prefix(self):
-        """Test that GET /rsvp/ is wired to the rsvp blueprint's search page."""
-        response = self.client.get("/rsvp/")
-
-        self.assertEqual(response.status_code, 200)
-
-    def test_rsvp_search_page_redirects_successfully(self):
-        """Test that GET /rsvp redirects the rsvp search page successfully."""
-        response = self.client.get("/rsvp")
-
-        self.assertEqual(response.status_code, 308)
+        """Test that 'rsvp' page is wired to the rsvp blueprint's search page."""
+        for endpoint in ["/rsvp/", "/rsvp"]:
+            with self.subTest(endpoint=endpoint):
+                response = self.client.get(endpoint)
+                self.assertEqual(response.status_code, 200)
 
     def test_rsvp_guest_page_is_registered_under_rsvp_prefix(self):
         """Test that GET /rsvp/<int:guest_id> is wired to the rsvp blueprint's guest page."""
@@ -88,16 +83,11 @@ class TestContactRoute(unittest.TestCase):
         self.client = app.test_client()
 
     def test_contact_page_renders_successfully(self):
-        """Test that GET /contact renders the contact page successfully."""
-        response = self.client.get("/contact/")
-
-        self.assertEqual(response.status_code, 200)
-
-    def test_contact_page_redirects_successfully(self):
-        """Test that GET /contact redirects the contact page successfully."""
-        response = self.client.get("/contact")
-
-        self.assertEqual(response.status_code, 308)
+        """Test that 'contact' page renders the contact page successfully."""
+        for endpoint in ["/contact/", "/contact"]:
+            with self.subTest(endpoint=endpoint):
+                response = self.client.get(endpoint)
+                self.assertEqual(response.status_code, 200)
 
 
 class TestItineraryRoute(unittest.TestCase):
@@ -108,16 +98,11 @@ class TestItineraryRoute(unittest.TestCase):
         self.client = app.test_client()
 
     def test_itinerary_page_renders_successfully(self):
-        """Test that GET /itinerary/ renders the itinerary page successfully."""
-        response = self.client.get("/itinerary/")
-
-        self.assertEqual(response.status_code, 200)
-
-    def test_itinerary_page_redirects_successfully(self):
-        """Test that GET /itinerary redirects the itinerary page successfully."""
-        response = self.client.get("/itinerary")
-
-        self.assertEqual(response.status_code, 308)
+        """Test that 'itinerary' page renders the itinerary page successfully."""
+        for endpoint in ["/itinerary/", "/itinerary"]:
+            with self.subTest(endpoint=endpoint):
+                response = self.client.get(endpoint)
+                self.assertEqual(response.status_code, 200)
 
 
 class TestSeatingRoute(unittest.TestCase):
@@ -128,16 +113,11 @@ class TestSeatingRoute(unittest.TestCase):
         self.client = app.test_client()
 
     def test_seating_page_renders_successfully(self):
-        """Test that GET /seating/ renders the seating page successfully."""
-        response = self.client.get("/seating/")
-
-        self.assertEqual(response.status_code, 200)
-
-    def test_seating_page_redirects_successfully(self):
-        """Test that GET /seating redirects the seating page successfully."""
-        response = self.client.get("/seating")
-
-        self.assertEqual(response.status_code, 308)
+        """Test that 'seating' page renders the seating page successfully."""
+        for endpoint in ["/seating/", "/seating"]:
+            with self.subTest(endpoint=endpoint):
+                reponse = self.client.get(endpoint)
+                self.assertEqual(reponse.status_code, 200)
 
 
 class TestTableInfoRoute(unittest.TestCase):

@@ -6,6 +6,7 @@ bp = Blueprint("itinerary", __name__)
 
 
 @bp.route("/")
+@bp.route("")
 def itinerary() -> str:
     """Render the application's "itinerary" page.
 
