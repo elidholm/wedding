@@ -1,5 +1,14 @@
 # The Lidholm-Wedding Everything App
 
+<p align="center">
+    <a href="https://github.com/elidholm/wedding/actions/workflows/ci.yml"><img align="center" src="https://github.com/elidholm/wedding/actions/workflows/ci.yml/badge.svg" alt="github actions"></a>
+    <a href="https://github.com/zricethezav/gitleaks-action"><img align="center" src="https://img.shields.io/badge/protected%20by-gitleaks-blue" alt="gitleaks badge"></a>
+    <a href="https://github.com/elidholm/wedding/issues"><img align="center" src="https://img.shields.io/github/issues/elidholm/wedding" alt="open issues"></a>
+    <a href="https://github.com/elidholm/wedding/commits/master"><img align="center" src="https://img.shields.io/github/commit-activity/m/elidholm/wedding" alt="commit frequency"></a>
+</p>
+
+---
+
 A Flask web app built as the digital hub for our wedding. Guests scan a personal
 QR code to RSVP (attendance, dietary needs, plus-ones, housing) via a unique
 link, then browse the day's schedule, menu, and seating info.
