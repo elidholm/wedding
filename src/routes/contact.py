@@ -6,6 +6,7 @@ bp = Blueprint("contact", __name__)
 
 
 @bp.route("/")
+@bp.route("")
 def contact() -> str:
     """Render the application's "contact us" page.
 

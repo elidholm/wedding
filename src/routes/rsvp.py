@@ -9,6 +9,7 @@ bp = Blueprint("rsvp", __name__)
 
 
 @bp.route("/", methods=["GET", "POST"])
+@bp.route("")
 def rsvp() -> str | Response:
     """Render the RSVP search page, or handle its guest-lookup form submission.
 

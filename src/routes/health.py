@@ -4,6 +4,7 @@ bp = Blueprint("health", __name__)
 
 
 @bp.route("/")
+@bp.route("")
 def health_check() -> tuple[dict[str, str], int]:
     """Basic health check endpoint for the application.
 
