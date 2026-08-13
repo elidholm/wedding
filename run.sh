@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 host_port=5000
-url=http://localhost:${host_port}/
+url=http://localhost:${host_port}
 MAX_ATTEMPTS=30
 RETRY_DELAY=1
 DEV_MODE=false
@@ -12,7 +12,7 @@ parse_args() {
     case $opt in
     p)
       host_port=$OPTARG
-      url=http://localhost:${host_port}/
+      url=http://localhost:${host_port}
       ;;
     d)
       DEV_MODE=true
@@ -64,9 +64,9 @@ main() {
       exit 1
     fi
 
-    echo "Waiting for the app to respond @ ${url}..."
-    if ! wait_for_app "$url"; then
-      echo "error: app did not respond @ ${url} after ${MAX_ATTEMPTS} attempts" >&2
+    echo "Waiting for the app to respond"
+    if ! wait_for_app "$url/health"; then
+      echo "error: app did not respond @ ${url}/health after ${MAX_ATTEMPTS} attempts" >&2
       echo 'Check the logs with: docker compose logs' >&2
       exit 1
     fi

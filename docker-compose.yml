@@ -19,3 +19,5 @@ services:
           path: ./uv.lock
         - action: rebuild
           path: ./src/config.yml
+        - action: rebuild
+          path: ./Dockerfile
