@@ -12,164 +12,173 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
+  changes:
+    name: Check for changed files
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      python: ${{ steps.filter.outputs.python }}
+      shell: ${{ steps.filter.outputs.shell }}
+      yaml: ${{ steps.filter.outputs.yaml }}
+      toml: ${{ steps.filter.outputs.toml }}
+      html: ${{ steps.filter.outputs.html }}
+      css: ${{ steps.filter.outputs.css }}
+      markdown: ${{ steps.filter.outputs.markdown }}
+      actions: ${{ steps.filter.outputs.actions }}
+      pyproject: ${{ steps.filter.outputs.pyproject }}
+      tests: ${{ steps.filter.outputs.tests }}
+    steps:
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            python:
+              - '**/*.py'
+            shell:
+              - '**/*.sh'
+            yaml:
+              - '**/*.yml'
+              - '**/*.yaml'
+            toml:
+              - '**/*.toml'
+            html:
+              - '**/*.html'
+            css:
+              - '**/*.css'
+            markdown:
+              - '**/*.md'
+            actions:
+              - '.github/workflows/**/*.yml'
+              - '.github/workflows/**/*.yaml'
+            pyproject:
+              - 'pyproject.toml'
+              - 'uv.lock'
+            tests:
+              - 'tests/**'
+
   python-lint:
     name: Python lint (ruff)
+    needs: changes
+    if: ${{ needs.changes.outputs.python == 'true' || needs.changes.outputs.pyproject == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Check for pyproject.toml
-        id: check
-        run: |
-          if [ -f pyproject.toml ]; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No pyproject.toml found yet — skipping Python lint."
-          fi
-
       - name: Install uv
-        if: steps.check.outputs.found == 'true'
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
       - name: Sync dependencies
-        if: steps.check.outputs.found == 'true'
         run: uv sync --all-extras --dev
 
       - name: Ruff check
-        if: steps.check.outputs.found == 'true'
         run: uv run ruff check .
 
       - name: Ruff format check
-        if: steps.check.outputs.found == 'true'
         run: uv run ruff format --check .
 
   python-typecheck:
     name: Python type check (mypy)
+    needs: changes
+    if: ${{ needs.changes.outputs.python == 'true' || needs.changes.outputs.pyproject == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Check for pyproject.toml
-        id: check
-        run: |
-          if [ -f pyproject.toml ]; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No pyproject.toml found yet — skipping Python type check."
-          fi
-
       - name: Install uv
-        if: steps.check.outputs.found == 'true'
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
       - name: Sync dependencies
-        if: steps.check.outputs.found == 'true'
         run: uv sync --all-extras --dev
 
       - name: Run mypy
-        if: steps.check.outputs.found == 'true'
         run: uv run mypy .
 
   python-test:
     name: Python tests (pytest)
+    needs: changes
+    if: ${{ needs.changes.outputs.python == 'true' || needs.changes.outputs.pyproject == 'true'  || needs.changes.outputs.tests == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Check for project and tests
-        id: check
-        run: |
-          if [ -f pyproject.toml ] && [ -d tests ]; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No pyproject.toml/tests directory found yet — skipping Python tests."
-          fi
-
       - name: Install uv
-        if: steps.check.outputs.found == 'true'
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
       - name: Sync dependencies
-        if: steps.check.outputs.found == 'true'
         run: uv sync --all-extras --dev
 
       - name: Run pytest
-        if: steps.check.outputs.found == 'true'
         run: uv run pytest
+
+  lockfile-check:
+    name: Lockfile check (uv)
+    needs: changes
+    if: ${{ needs.changes.outputs.pyproject == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Check lockfile consistency
+        run: uv sync --locked
 
   html-lint:
     name: HTML/Jinja lint (djlint)
+    needs: changes
+    if: ${{ needs.changes.outputs.html == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Check for HTML files
-        id: check
-        run: |
-          if git ls-files '*.html' | grep -q .; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No HTML files found yet — skipping HTML lint."
-          fi
-
-      - name: Set up Python
-        if: steps.check.outputs.found == 'true'
-        uses: actions/setup-python@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
-          python-version: '3.12'
+          enable-cache: true
 
-      - name: Install djlint
-        if: steps.check.outputs.found == 'true'
-        run: pip install djlint
+      - name: Sync dependencies
+        run: uv sync --all-extras --dev
 
       - name: Run djlint
-        if: steps.check.outputs.found == 'true'
-        run: djlint . --profile=jinja
+        run: uv run djlint . --profile=jinja
 
   css-lint:
     name: CSS lint (stylelint)
+    needs: changes
+    if: ${{ needs.changes.outputs.css == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Check for CSS files
-        id: check
-        run: |
-          if git ls-files '*.css' | grep -q .; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No CSS files found yet — skipping CSS lint."
-          fi
-
       - name: Set up Node
-        if: steps.check.outputs.found == 'true'
         uses: actions/setup-node@v7
         with:
           node-version: '20'
 
       - name: Install stylelint
-        if: steps.check.outputs.found == 'true'
         run: npm install --no-save stylelint stylelint-config-standard
 
       - name: Create minimal stylelint config (if none exists)
-        if: steps.check.outputs.found == 'true'
         run: |
           if ! git ls-files | grep -qE '^\.stylelintrc|stylelint\.config\.'; then
             echo '{ "extends": "stylelint-config-standard" }' > .stylelintrc.ci.json
@@ -179,7 +188,6 @@ jobs:
           fi
 
       - name: Run stylelint
-        if: steps.check.outputs.found == 'true'
         run: |
           if [ -n "$STYLELINT_CONFIG" ]; then
             npx stylelint "**/*.css" --config "$STYLELINT_CONFIG"
@@ -189,115 +197,73 @@ jobs:
 
   markdown-lint:
     name: Markdown lint (markdownlint-cli2)
+    needs: changes
+    if: ${{ needs.changes.outputs.markdown == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Check for Markdown files
-        id: check
-        run: |
-          if git ls-files '*.md' | grep -q .; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No Markdown files found — skipping Markdown lint."
-          fi
-
       - name: Run markdownlint-cli2
-        if: steps.check.outputs.found == 'true'
         uses: DavidAnson/markdownlint-cli2-action@v24.2.0
         with:
           globs: '**/*.md'
 
   shell-lint:
     name: Shell lint (shellcheck + shfmt)
+    needs: changes
+    if: ${{ needs.changes.outputs.shell == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Check for shell scripts
-        id: check
-        run: |
-          if git ls-files '*.sh' | grep -q .; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No shell scripts found yet — skipping shell lint."
-          fi
-
       - name: Run shellcheck
-        if: steps.check.outputs.found == 'true'
         uses: ludeeus/action-shellcheck@master
         with:
           scandir: '.'
 
       - name: Install shfmt
-        if: steps.check.outputs.found == 'true'
         uses: mfinelli/setup-shfmt@v4
 
       - name: Run shfmt (format check)
-        if: steps.check.outputs.found == 'true'
         run: git ls-files '*.sh' | xargs shfmt -d
 
   toml-lint:
     name: TOML lint (taplo)
+    needs: changes
+    if: ${{ needs.changes.outputs.toml == 'true' || needs.changes.outputs.pyproject == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Check for TOML files
-        id: check
-        run: |
-          if git ls-files '*.toml' | grep -q .; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No TOML files found yet — skipping TOML lint."
-          fi
-
-      - name: Set up Python
-        if: steps.check.outputs.found == 'true'
-        uses: actions/setup-python@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
-          python-version: '3.12'
+          enable-cache: true
 
-      - name: Install taplo
-        if: steps.check.outputs.found == 'true'
-        run: pip install taplo
+      - name: Sync dependencies
+        run: uv sync --all-extras --dev
 
       - name: Run taplo lint
-        if: steps.check.outputs.found == 'true'
-        run: git ls-files '*.toml' | xargs taplo lint
+        run: uv run taplo lint -- *.toml .*.toml
 
       - name: Run taplo format check
-        if: steps.check.outputs.found == 'true'
-        run: git ls-files '*.toml' | xargs taplo fmt --check
+        run: uv run taplo fmt --check -- *.toml .*.toml
 
   actions-lint:
     name: GitHub Actions lint (actionlint)
+    needs: changes
+    if: ${{ needs.changes.outputs.actions == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Check for workflow files
-        id: check
-        run: |
-          if git ls-files '.github/workflows/*.yml' '.github/workflows/*.yaml' | grep -q .; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No workflow files found yet — skipping actions lint."
-          fi
-
       - name: Download actionlint
-        if: steps.check.outputs.found == 'true'
         run: |
           bash <(curl -sSf https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
 
       - name: Run actionlint
-        if: steps.check.outputs.found == 'true'
         run: ./actionlint -color
