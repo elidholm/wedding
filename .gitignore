@@ -74,7 +74,9 @@ dmypy.json
 .pypirc
 
 # Editors / IDEs
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 .idea/
 
 # OS-specific
