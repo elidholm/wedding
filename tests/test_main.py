@@ -5,27 +5,27 @@ import unittest
 from main import app
 
 
-class TestHomeRoute(unittest.TestCase):
-    """Test cases for the home route."""
+class TestHomePage(unittest.TestCase):
+    """Test cases for the home page."""
 
     def setUp(self):
         """Build a Flask app and test client for each test."""
         self.client = app.test_client()
 
-    def test_home_route_renders_successfully(self):
+    def test_home_page_renders_successfully(self):
         """Test that GET / renders the home page successfully."""
         response = self.client.get("/")
 
         self.assertEqual(response.status_code, 200)
 
-    def test_home_route_with_slash_home_renders_successfully(self):
+    def test_home_page_with_slash_home_renders_successfully(self):
         """Test that GET /home renders the home page successfully."""
         response = self.client.get("/home")
 
         self.assertEqual(response.status_code, 200)
 
 
-class TestRsvpRoute(unittest.TestCase):
+class TestRsvpPage(unittest.TestCase):
     """Test cases for the rsvp blueprint's routes."""
 
     def setUp(self):
@@ -75,7 +75,7 @@ class TestRsvpRoute(unittest.TestCase):
         self.assertIn(b"42", response.data)
 
 
-class TestContactRoute(unittest.TestCase):
+class TestContactPage(unittest.TestCase):
     """Test cases for the contact blueprint's routes."""
 
     def setUp(self):
@@ -90,7 +90,7 @@ class TestContactRoute(unittest.TestCase):
                 self.assertEqual(response.status_code, 200)
 
 
-class TestItineraryRoute(unittest.TestCase):
+class TestItineraryPage(unittest.TestCase):
     """Test cases for the itinerary blueprint's routes."""
 
     def setUp(self):
@@ -105,7 +105,7 @@ class TestItineraryRoute(unittest.TestCase):
                 self.assertEqual(response.status_code, 200)
 
 
-class TestSeatingRoute(unittest.TestCase):
+class TestSeatingPage(unittest.TestCase):
     """Test cases for the seating blueprint's routes."""
 
     def setUp(self):
@@ -120,7 +120,7 @@ class TestSeatingRoute(unittest.TestCase):
                 self.assertEqual(reponse.status_code, 200)
 
 
-class TestTableInfoRoute(unittest.TestCase):
+class TestTableInfoPage(unittest.TestCase):
     """Test cases for the table_info blueprint's routes."""
 
     def setUp(self):
