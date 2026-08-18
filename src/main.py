@@ -6,13 +6,13 @@ from flask import Flask
 
 from core.config import Config
 from core.logging import setup_logging
-from routes.contact import bp as contact_bp
-from routes.health import bp as health_bp
-from routes.home import bp as home_bp
-from routes.itinerary import bp as itinerary_bp
-from routes.rsvp import bp as rsvp_bp
-from routes.seating import bp as seating_bp
-from routes.table_info import bp as table_info_bp
+from pages.contact import bp as contact_bp
+from pages.health import bp as health_bp
+from pages.home import bp as home_bp
+from pages.itinerary import bp as itinerary_bp
+from pages.rsvp import bp as rsvp_bp
+from pages.seating import bp as seating_bp
+from pages.table_info import bp as table_info_bp
 
 CONFIG_FILE = Path(__file__).parent / "config.yml"
 config = Config.load(CONFIG_FILE)
