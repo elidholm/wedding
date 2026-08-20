@@ -1,10 +1,14 @@
-"""Entrypoint for running the wedding app directly."""
+"""
+main - Entrypoint for running the wedding app directly
+------------------------------------------------------
+"""
 
 from flask import Flask
 
 from api.routes import register as register_api
 from core.config import get_config
 from core.logging import setup_logging
+from db.schemas import Base, engine
 from pages.routes import register as register_pages
 
 config = get_config()
@@ -23,6 +27,8 @@ app.config["PORT"] = config.port
 app.config["DEBUG"] = config.debug
 app.config["SECRET_KEY"] = config.secret_key
 app.config["CONFIG"] = config
+
+Base.metadata.create_all(bind=engine)
 
 register_pages(app)
 register_api(app)
