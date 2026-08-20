@@ -7,6 +7,8 @@ services:
       - "${host_port:-5000}:5000"
     env_file:
       - .env
+    volumes:
+      - storage:/app/storage
     develop:
       watch:
         - action: sync
@@ -29,3 +31,6 @@ services:
 
     mem_limit: 512m
     cpus: 0.5
+
+volumes:
+  storage:

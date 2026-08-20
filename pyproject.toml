@@ -9,6 +9,7 @@ dependencies = [
   "pydantic-yaml>=1.7.0",
   "pydantic>=2.13.4",
   "rich>=15.0.0",
+  "sqlalchemy>=2.0.52",
 ]
 
 [dependency-groups]

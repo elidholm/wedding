@@ -1,6 +1,14 @@
-"""Application configuration.
+"""
+core.config - Application configuration
+---------------------------------------
 
 Configuration is read from environment variables and a YAML file.
+
+Attributes:
+    EMAIL_RE (re.Pattern): Regular expression pattern for validating email addresses.
+    PHONE_RE (re.Pattern): Regular expression pattern for validating phone numbers.
+    ENV_VAR_OVERRIDES (set[tuple[str, type]]): Set of tuples containing environment variable names
+        and their corresponding types for overriding configuration values.
 """
 
 from __future__ import annotations
@@ -18,7 +26,7 @@ _log = logging.getLogger(__name__)
 
 EMAIL_RE: re.Pattern = re.compile(r"^[^@]+@[^@]+\.[^@]+$")
 PHONE_RE: re.Pattern = re.compile(r"^\(\+[0-9]+\)7[0-9]-[0-9]{3} [0-9]{2} [0-9]{2}$")
-ENV_VAR_OVERRIDES = {
+ENV_VAR_OVERRIDES: set[tuple[str, type]] = {
     ("app_name", str),
     ("flask_env", str),
     ("host", str),
@@ -26,6 +34,7 @@ ENV_VAR_OVERRIDES = {
     ("secret_key", str),
     ("log_level", str),
     ("googlemaps_key", str),
+    ("db_url", str),
 }
 
 
@@ -91,6 +100,8 @@ class Config(BaseModel):
         log_level (str): The logging level for the application. Defaults to "INFO".
         debug (bool): Whether to run the Flask app in debug mode. Defaults to True.
         googlemaps_key (str): The Google Maps API key. Defaults to an empty string.
+        db_url (str): The SQLAlchemy database URL. Defaults to a local SQLite file under
+            ``storage/``.
         wedding_couple_contact (ContactInfo): Contact information for the wedding couple.
         toast_master_contact (list[ContactInfo]): Contact information for the toast
             master(s). Defaults to an empty list.
@@ -106,6 +117,7 @@ class Config(BaseModel):
     log_level: str = "INFO"
     debug: bool = True
     googlemaps_key: str = ""
+    db_url: str = "sqlite:///storage/wedding.db"
 
     wedding_couple_contact: ContactInfo
     toast_master_contact: list[ContactInfo] = []
