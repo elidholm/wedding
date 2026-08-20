@@ -5,7 +5,8 @@ on:
   pull_request:
     branches: [master]
   schedule:
-    - cron: '0 0 * * 0' # Every Sunday at midnight
+    - cron: '0 0 * * *' # Every day at midnight
+  workflow_dispatch:
 
 # Cancel superseded runs on the same branch/PR to save CI minutes.
 concurrency:
@@ -22,22 +23,27 @@ jobs:
     permissions:
       pull-requests: read
     outputs:
-      python: ${{ steps.filter.outputs.python }}
-      shell: ${{ steps.filter.outputs.shell }}
-      yaml: ${{ steps.filter.outputs.yaml }}
-      toml: ${{ steps.filter.outputs.toml }}
-      html: ${{ steps.filter.outputs.html }}
-      css: ${{ steps.filter.outputs.css }}
-      markdown: ${{ steps.filter.outputs.markdown }}
-      actions: ${{ steps.filter.outputs.actions }}
-      pyproject: ${{ steps.filter.outputs.pyproject }}
-      tests: ${{ steps.filter.outputs.tests }}
+      python: ${{ steps.filter.outputs.python || steps.force.outputs.all }}
+      shell: ${{ steps.filter.outputs.shell || steps.force.outputs.all }}
+      yaml: ${{ steps.filter.outputs.yaml || steps.force.outputs.all }}
+      toml: ${{ steps.filter.outputs.toml || steps.force.outputs.all }}
+      html: ${{ steps.filter.outputs.html || steps.force.outputs.all }}
+      css: ${{ steps.filter.outputs.css || steps.force.outputs.all }}
+      markdown: ${{ steps.filter.outputs.markdown || steps.force.outputs.all }}
+      actions: ${{ steps.filter.outputs.actions || steps.force.outputs.all }}
+      pyproject: ${{ steps.filter.outputs.pyproject || steps.force.outputs.all }}
+      tests: ${{ steps.filter.outputs.tests || steps.force.outputs.all }}
     steps:
+      # Only pull_request runs have a base ref to diff against. On a
+      # schedule/workflow_dispatch run there's no "changed files" concept, so
+      # skip the diff entirely and force every check to run instead (below).
       - name: Checkout
+        if: github.event_name == 'pull_request'
         uses: actions/checkout@v7
 
       - uses: dorny/paths-filter@v4
         id: filter
+        if: github.event_name == 'pull_request'
         with:
           filters: |
             python:
@@ -63,6 +69,11 @@ jobs:
               - 'uv.lock'
             tests:
               - 'tests/**'
+
+      - name: Force all checks to run
+        id: force
+        if: github.event_name != 'pull_request'
+        run: echo "all=true" >> "$GITHUB_OUTPUT"
 
   python-lint:
     name: Python lint (ruff)
