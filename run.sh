@@ -2,6 +2,7 @@
 
 host_port=5000
 url=http://localhost:${host_port}
+healthcheck_endpoint=/api/v1/health
 MAX_ATTEMPTS=30
 RETRY_DELAY=1
 DEV_MODE=false
@@ -117,8 +118,8 @@ main() {
     fi
 
     echo 'Waiting for the app to respond...'
-    if ! wait_for_app "$url/health"; then
-      die "The app did not respond @ ${url}/health after ${MAX_ATTEMPTS} attempts"
+    if ! wait_for_app "$url/$healthcheck_endpoint"; then
+      die "The app did not respond @ $url/$healthcheck_endpoint after $MAX_ATTEMPTS attempts"
     fi
 
     echo "The application is up and running @ ${url}"

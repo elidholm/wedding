@@ -17,12 +17,15 @@ RUN uv sync --frozen
 FROM python:3.12-slim-bookworm AS production
 
 RUN useradd --create-home appuser
-USER appuser
 
 WORKDIR /app
 
-COPY /src src
-COPY --from=builder /app/.venv .venv
+RUN mkdir -p /app/storage && chown appuser:appuser /app/storage
+
+COPY --chown=appuser:appuser /src src
+COPY --from=builder --chown=appuser:appuser /app/.venv .venv
+
+USER appuser
 
 ENV PATH="/app/.venv/bin:$PATH"
 
