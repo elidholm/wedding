@@ -1,3 +1,8 @@
+"""
+api.v1.health - Health check API resource
+-----------------------------------------
+"""
+
 from flask import Blueprint
 
 bp = Blueprint("health", __name__)

@@ -42,10 +42,10 @@ guest gets a limited number of photo "shots").
 ## Project Structure
 
 The project uses a small package-per-concern layout under `src/`: shared
-app setup lives in `src/core/`, and each feature's blueprint lives in its
-own flat module under `src/routes/`. This is the **current, actual**
-convention (see below for how blueprints may evolve further as features
-grow):
+app setup lives in `src/core/`, guest-facing HTML pages live under
+`src/pages/`, and the JSON API layer lives under `src/api/` (versioned,
+e.g. `src/api/v1/`). This is the **current, actual** convention (see below
+for how blueprints may evolve further as features grow):
 
 ```text
 wedding/
@@ -56,25 +56,50 @@ wedding/
 │                                 #   markdownlint/shellcheck+shfmt/taplo/
 │                                 #   actionlint, one job per tool
 ├── src/
+│   ├── config.yml               # application configuration
 │   ├── __init__.py               # intentionally empty (no logic here)
 │   ├── core/
 │   │   ├── __init__.py           # intentionally empty (no logic here)
-│   │   ├── config.py             # Config(BaseSettings): APP_NAME/
-│   │   │                         #   FLASK_ENV/HOST/PORT/SECRET_KEY from
-│   │   │                         #   .env; exports a `config` singleton
+│   │   ├── config.py             # Config: loads src/config.yml via
+│   │   │                         #   pydantic_yaml, overlaid with env-var
+│   │   │                         #   overrides; exposes Config.load(...)
 │   │   └── logging.py            # setup_logging(): rich-based logging
 │   │                             #   handler, called once from main.py
 │   ├── main.py                    # builds the module-level `app = Flask(
 │   │                              #   ...)` singleton directly (no
-│   │                              #   create_app() factory), registers
-│   │                              #   all blueprints, defines `main()`
-│   │                              #   which calls `app.run(...)`
-│   ├── routes/
-│   │   ├── home.py                 # `home` blueprint: "/" and "/home"
-│   │   ├── rsvp.py                  # `rsvp` blueprint: "/" (GET renders
-│   │   │                            #   search form, POST looks up and
-│   │   │                            #   redirects) + "/<int:guest_id>"
-│   │   └── contact.py                # `contact` blueprint: "/"
+│   │                              #   create_app() factory), calls
+│   │                              #   pages.routes.register(app) and
+│   │                              #   api.routes.register(app), defines
+│   │                              #   `main()` which calls `app.run(...)`
+│   ├── pages/
+│   │   ├── __init__.py             # intentionally empty (no logic here)
+│   │   ├── routes.py                # register(app): wires every page
+│   │   │                            #   blueprint below onto the app,
+│   │   │                            #   each under its own url_prefix —
+│   │   │                            #   the only page-related thing
+│   │   │                            #   main.py imports
+│   │   ├── home.py                   # `home` blueprint: "/" and "/home"
+│   │   ├── rsvp.py                    # `rsvp` blueprint: "/" (GET renders
+│   │   │                              #   search form, POST looks up and
+│   │   │                              #   redirects) + "/<int:guest_id>"
+│   │   ├── contact.py                  # `contact` blueprint: "/"
+│   │   ├── itinerary.py                 # `itinerary` blueprint: "/"
+│   │   ├── seating.py                    # `seating` blueprint: "/"
+│   │   └── table_info.py                  # `table_info` blueprint:
+│   │                                       #   "/<table_name>"
+│   ├── api/
+│   │   ├── __init__.py             # intentionally empty (no logic here)
+│   │   ├── routes.py                # register(app): delegates to each
+│   │   │                            #   API version's own register(app)
+│   │   │                            #   (currently just v1) — the only
+│   │   │                            #   API-related thing main.py imports
+│   │   └── v1/
+│   │       ├── __init__.py           # intentionally empty (no logic here)
+│   │       ├── routes.py              # register(app): wires every v1
+│   │       │                          #   resource blueprint below onto
+│   │       │                          #   the app under /api/v1/<resource>
+│   │       └── health.py               # `health` blueprint: "/" and ""
+│   │                                    #   registered at /api/v1/health
 │   ├── templates/
 │   │   ├── base.html                  # shared layout, extended via
 │   │   │                              #   {% block %}
@@ -106,23 +131,38 @@ wedding/
 └── uv.lock
 ```
 
-**Blueprint pattern:** `src/routes/` is a package, but each feature is
-still just a single flat module inside it (e.g. `routes/rsvp.py`) that
-defines `bp = Blueprint(...)` and its route(s) directly in that one file —
-there's no per-feature subpackage (e.g. no `routes/rsvp/routes.py` split)
-yet. If a feature area grows enough to warrant splitting further (multiple
-route files, helpers, or its own mock data), promote it to its own
-subpackage under `routes/` following the empty-`__init__.py` convention
-already used elsewhere: an `__init__.py` that stays completely empty (no
-`Blueprint(...)` instantiation, no imports) and a `routes.py` that defines
-the blueprint and views. Don't introduce this extra structure prematurely
-for a feature that's still a single small file.
+**Blueprint pattern:** `src/pages/` and `src/api/v1/` are packages, but
+each feature is still just a single flat module inside them (e.g.
+`pages/rsvp.py`, `api/v1/health.py`) that defines `bp = Blueprint(...)`
+and its route(s) directly in that one file — there's no per-feature
+subpackage (e.g. no `pages/rsvp/routes.py` split) yet. If a feature area
+grows enough to warrant splitting further (multiple route files, helpers,
+or its own mock data), promote it to its own subpackage following the
+empty-`__init__.py` convention already used elsewhere: an `__init__.py`
+that stays completely empty (no `Blueprint(...)` instantiation, no
+imports) and a `routes.py` that defines the blueprint and views. Don't
+introduce this extra structure prematurely for a feature that's still a
+single small file.
+
+**Aggregator pattern (`routes.py` at the package root):** unlike a
+single-feature `routes.py`, `pages/routes.py`, `api/v1/routes.py`, and
+`api/routes.py` don't define their own blueprint — they each expose a
+`register(app: Flask) -> None` function that imports and registers every
+blueprint (or, for `api/routes.py`, every API version) beneath them, with
+prefixes baked in. This keeps `main.py` down to two calls
+(`pages.routes.register(app)`, `api.routes.register(app)`) with no
+`url_prefix=` literals of its own, while leaving every blueprint's
+endpoint name unchanged (`home.home`, `rsvp.rsvp`, `health.health_check`,
+...) — deliberately *not* using Flask's native nested-Blueprint feature
+(`parent_bp.register_blueprint(child_bp)`), since that renames endpoints
+(e.g. `home.home` → `pages.home.home`) and would break every existing
+`url_for(...)` call in the templates.
 
 **Important — flat imports & no logic in `__init__.py`:**
 
 - Modules under `src/` import each other with flat, non-package-qualified
   paths rooted at `src/` (e.g. `from core.config import config`, `from
-  routes.rsvp import bp`), not `from src.core.config import ...`. This only
+  pages.rsvp import bp`), not `from src.core.config import ...`. This only
   resolves correctly because the app is always launched as `uv run python
   src/main.py` (or `make run-local`) from the repo root, which puts `src/`
   itself (not the repo root) at the front of `sys.path`. Do not "fix" these
@@ -130,10 +170,11 @@ for a feature that's still a single small file.
   or similar — mixing both import styles can cause Python to load the same
   module twice under different names, silently breaking blueprint
   registration.
-- Every `__init__.py` under `src/` (including `src/core/__init__.py`) must
-  stay completely empty — no `Blueprint(...)` instantiation, no imports.
-  Define blueprints and routes in the feature's own module under
-  `src/routes/` instead.
+- Every `__init__.py` under `src/` (including `src/core/__init__.py`,
+  `src/pages/__init__.py`, `src/api/__init__.py`, `src/api/v1/__init__.py`)
+  must stay completely empty — no `Blueprint(...)` instantiation, no
+  imports. Define blueprints and views in the feature's own module, and
+  aggregator/registration logic in that package's `routes.py` instead.
 
 Keep routes thin: they call into data-layer / service functions rather than
 embedding business logic directly.
@@ -141,7 +182,7 @@ embedding business logic directly.
 ## Mock Data Layer Rules (planned — not yet implemented)
 
 There is no `data/store.py` or any data-access layer in the codebase yet;
-`src/routes/rsvp.py` currently only renders templates and redirects based on
+`src/pages/rsvp.py` currently only renders templates and redirects based on
 a raw form-submitted `guest_id` — no real lookup against invitee data. Once
 real invitee/RSVP data is needed, follow this convention:
 

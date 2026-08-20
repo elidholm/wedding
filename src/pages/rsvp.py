@@ -1,4 +1,7 @@
-"""The `rsvp` blueprint: page where guests can RSVP to the wedding."""
+"""
+pages.rsvp - Page where guests can RSVP to the wedding.
+-------------------------------------------------------
+"""
 
 from datetime import UTC, datetime
 
@@ -9,7 +12,7 @@ bp = Blueprint("rsvp", __name__)
 
 
 @bp.route("/", methods=["GET", "POST"])
-@bp.route("")
+@bp.route("", methods=["GET", "POST"])
 def rsvp() -> str | Response:
     """Render the RSVP search page, or handle its guest-lookup form submission.
 

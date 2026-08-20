@@ -58,14 +58,14 @@ class TestRsvpPage(unittest.TestCase):
         response = self.client.post("/rsvp/", data={})
 
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.location.endswith("/rsvp/"))
+        self.assertTrue(response.location.endswith("/rsvp"))
 
     def test_post_with_non_numeric_guest_id_redirects_back_to_search(self):
         """Test that POSTing a non-numeric guest_id redirects back to the search page."""
         response = self.client.post("/rsvp/", data={"guest_id": "not-a-number"})
 
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.location.endswith("/rsvp/"))
+        self.assertTrue(response.location.endswith("/rsvp"))
 
     def test_get_guest_page_renders_successfully(self):
         """Test that GET /rsvp/<int:guest_id> renders the guest's RSVP page."""
