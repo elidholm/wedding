@@ -41,12 +41,13 @@ class GuestService:
         """
         return self._db.query(Guest).filter(Guest.id == guest_id).first()
 
-    def create_guest(self, name: str, plus_one: bool) -> Guest:
+    def create_guest(self, name: str, plus_one: bool = False) -> Guest:
         """Create a new guest record.
 
         Args:
             name (str): The guest's full name.
-            plus_one (bool): Whether the guest is allowed to bring a plus-one.
+            plus_one (bool): Whether the guest is allowed to bring a
+                plus-one. Defaults to False.
 
         Returns:
             Guest: The newly created guest record.
@@ -58,33 +59,47 @@ class GuestService:
         return guest
 
     def update_guest(
-        self, guest_id: int, name: str, email: str, attending: bool, allergies: str, food_preferences: str
+        self,
+        guest_id: int,
+        name: str | None = None,
+        email: str | None = None,
+        attending: bool | None = None,
+        allergies: str | None = None,
+        food_preferences: str | None = None,
     ) -> Guest | None:
         """Update an existing guest record.
+
+        Leaving any argument as None will leave that field unchanged.
 
         Args:
             guest_id (int): The unique personal ID number of the guest to
                 update.
-            name (str): The guest's full name.
-            email (str): The guest's email address.
-            attending (bool): Whether the guest is attending.
-            allergies (str): Free-text description of the guest's allergies.
-            food_preferences (str): Free-text description of the guest's food
-                preferences.
+            name (str | None): The guest's full name. Defaults to None.
+            email (str | None): The guest's email address. Defaults to None.
+            attending (bool | None): Whether the guest is attending. Defaults to None.
+            allergies (str | None): Free-text description of the guest's allergies.
+                Defaults to None.
+            food_preferences (str | None): Free-text description of the guest's food
+                preferences. Defaults to None.
 
         Returns:
-            Guest | None: The updated guest record, or None if no guest with
-            that ID exists.
+            Guest | None: The updated guest record, or None if no guest with that ID
+            exists.
         """
         guest = self.get_guest(guest_id)
         if not guest:
             return None
 
-        guest.name = name
-        guest.email = email
-        guest.attending = attending
-        guest.allergies = allergies
-        guest.food_preferences = food_preferences
+        if name is not None:
+            guest.name = name
+        if email is not None:
+            guest.email = email
+        if attending is not None:
+            guest.attending = attending
+        if allergies is not None:
+            guest.allergies = allergies
+        if food_preferences is not None:
+            guest.food_preferences = food_preferences
 
         self._db.commit()
         self._db.refresh(guest)

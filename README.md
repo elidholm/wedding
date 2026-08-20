@@ -18,7 +18,10 @@ A Flask web app built as the digital hub for our wedding. Guests scan a personal
 - **Seating** (`/seating`) — table seating info.
 - **Table info** (`/tables/<table_name>`) — per-table detail pages.
 - **Contact** (`/contact`) — contact details for the wedding couple/toastmasters.
-- **Health check** (`/health`) — used by Docker's `HEALTHCHECK` and `run.sh`.
+
+The API endpoints are also available for programmatic access behind a `/api/v<x>` prefix:
+
+- **Health check** (`/api/v1/health`) — used by Docker's `HEALTHCHECK` and `run.sh`.
 
 ## Prerequisites
 
