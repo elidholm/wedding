@@ -5,6 +5,7 @@ core.config - Application configuration
 Configuration is read from environment variables and a YAML file.
 
 Attributes:
+    CONFIG_FILE (Path): Path to the YAML configuration file.
     EMAIL_RE (re.Pattern): Regular expression pattern for validating email addresses.
     PHONE_RE (re.Pattern): Regular expression pattern for validating phone numbers.
     ENV_VAR_OVERRIDES (set[tuple[str, type]]): Set of tuples containing environment variable names
@@ -16,6 +17,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+from functools import lru_cache
 from pathlib import Path
 
 from pydantic import BaseModel, ValidationError, field_validator
@@ -23,7 +25,7 @@ from pydantic_yaml import parse_yaml_file_as
 
 _log = logging.getLogger(__name__)
 
-
+CONFIG_FILE = Path(__file__).resolve().parent.parent / "config.yml"
 EMAIL_RE: re.Pattern = re.compile(r"^[^@]+@[^@]+\.[^@]+$")
 PHONE_RE: re.Pattern = re.compile(r"^\(\+[0-9]+\)7[0-9]-[0-9]{3} [0-9]{2} [0-9]{2}$")
 ENV_VAR_OVERRIDES: set[tuple[str, type]] = {
@@ -155,3 +157,13 @@ class Config(BaseModel):
                     _log.error(f"Invalid value for {env_var}: {e}")
 
         return config
+
+
+@lru_cache(maxsize=1)
+def get_config() -> Config:
+    """Return the application's cached configuration, loading it on first access.
+
+    Returns:
+        Config: The application's runtime configuration singleton.
+    """
+    return Config.load(CONFIG_FILE)
