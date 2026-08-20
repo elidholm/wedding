@@ -1,16 +1,13 @@
 """Entrypoint for running the wedding app directly."""
 
-from pathlib import Path
-
 from flask import Flask
 
 from api.routes import register as register_api
-from core.config import Config
+from core.config import get_config
 from core.logging import setup_logging
 from pages.routes import register as register_pages
 
-CONFIG_FILE = Path(__file__).parent / "config.yml"
-config = Config.load(CONFIG_FILE)
+config = get_config()
 
 setup_logging(config.log_level)
 
