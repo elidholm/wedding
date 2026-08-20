@@ -1,3 +1,8 @@
+"""
+pages.contact - Contact page blueprint
+--------------------------------------
+"""
+
 from datetime import UTC, datetime
 
 from flask import Blueprint, current_app, render_template

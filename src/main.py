@@ -4,15 +4,10 @@ from pathlib import Path
 
 from flask import Flask
 
-from api.v1.health import bp as health_bp
+from api.routes import register as register_api
 from core.config import Config
 from core.logging import setup_logging
-from pages.contact import bp as contact_bp
-from pages.home import bp as home_bp
-from pages.itinerary import bp as itinerary_bp
-from pages.rsvp import bp as rsvp_bp
-from pages.seating import bp as seating_bp
-from pages.table_info import bp as table_info_bp
+from pages.routes import register as register_pages
 
 CONFIG_FILE = Path(__file__).parent / "config.yml"
 config = Config.load(CONFIG_FILE)
@@ -32,14 +27,8 @@ app.config["DEBUG"] = config.debug
 app.config["SECRET_KEY"] = config.secret_key
 app.config["CONFIG"] = config
 
-app.register_blueprint(home_bp, url_prefix="")
-app.register_blueprint(rsvp_bp, url_prefix="/rsvp")
-app.register_blueprint(contact_bp, url_prefix="/contact")
-app.register_blueprint(itinerary_bp, url_prefix="/itinerary")
-app.register_blueprint(seating_bp, url_prefix="/seating")
-app.register_blueprint(table_info_bp, url_prefix="/tables")
-
-app.register_blueprint(health_bp, url_prefix="/api/v1/health")
+register_pages(app)
+register_api(app)
 
 
 def main() -> None:
