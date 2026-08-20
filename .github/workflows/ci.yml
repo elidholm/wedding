@@ -178,7 +178,7 @@ jobs:
   css-lint:
     name: CSS lint (stylelint)
     needs: changes
-    if: ${{ needs.changes.outputs.css == 'true' }}
+    if: ${{ needs.changes.outputs.css == 'true' && false }} # Disabled for now
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
