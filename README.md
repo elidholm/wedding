@@ -81,14 +81,15 @@ make shell        # open a shell in the running app container
 
 Environment variables (see `.env.example` for the template):
 
-| Variable         | Purpose                                                                                 |
-| ---------------- | --------------------------------------------------------------------------------------- |
-| `FLASK_ENV`      | `development` or `production`; controls Flask debug mode.                               |
-| `HOST`           | Host address the app binds to (default `0.0.0.0`).                                      |
-| `PORT`           | Port the app binds to (default `5000`).                                                 |
-| `SECRET_KEY`     | Flask session secret — set to a random value, never commit a real one.                  |
-| `LOG_LEVEL`      | Logging verbosity (e.g. `INFO`, `DEBUG`).                                               |
-| `GOOGLEMAPS_KEY` | Optional Google Maps embed API key; the venue map on the home page is skipped if unset. |
+| Variable         | Purpose                                                                                            |
+| ---------------- | -------------------------------------------------------------------------------------------------- |
+| `FLASK_ENV`      | `development` or `production`; controls Flask debug mode.                                          |
+| `HOST`           | Host address the app binds to (default `0.0.0.0`).                                                 |
+| `PORT`           | Port the app binds to (default `5000`).                                                            |
+| `SECRET_KEY`     | Flask session secret — set to a random value, never commit a real one.                             |
+| `ADMIN_PASSWORD` | Password required to log in to the `/admin` area — set to a random value, never commit a real one. |
+| `LOG_LEVEL`      | Logging verbosity (e.g. `INFO`, `DEBUG`).                                                          |
+| `GOOGLEMAPS_KEY` | Optional Google Maps embed API key; the venue map on the home page is skipped if unset.            |
 
 Any of these can also be set directly in `src/config.yml` — environment variables take precedence and override the YAML file's values at startup (see `Config.load` in `src/core/config.py`).
 

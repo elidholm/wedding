@@ -37,6 +37,7 @@ ENV_VAR_OVERRIDES: set[tuple[str, type]] = {
     ("log_level", str),
     ("googlemaps_key", str),
     ("db_url", str),
+    ("admin_password", str),
 }
 
 
@@ -99,6 +100,9 @@ class Config(BaseModel):
         port (int): The port number to bind the Flask app to. Defaults to 5000.
         secret_key (str | None): The secret key for Flask sessions, or None if not set.
             Defaults to None.
+        admin_password (str | None): The password required to log in to the admin
+            area, or None if not set (in which case admin login is disabled).
+            Defaults to None.
         log_level (str): The logging level for the application. Defaults to "INFO".
         debug (bool): Whether to run the Flask app in debug mode. Defaults to True.
         googlemaps_key (str): The Google Maps API key. Defaults to an empty string.
@@ -116,6 +120,7 @@ class Config(BaseModel):
     host: str = "0.0.0.0"
     port: int = 5000
     secret_key: str | None = None
+    admin_password: str | None = None
     log_level: str = "INFO"
     debug: bool = True
     googlemaps_key: str = ""
