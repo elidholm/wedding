@@ -5,6 +5,7 @@ description = "Digital hub for our wedding: RSVP via personal QR code, day-of in
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+  "flask-limiter>=4.1.1",
   "flask>=3.0",
   "pydantic-yaml>=1.7.0",
   "pydantic>=2.13.4",
