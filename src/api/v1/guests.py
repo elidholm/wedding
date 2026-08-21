@@ -9,9 +9,6 @@ deleting guests.
 Every response - success or error - is JSON, including validation
 failures (400), not-found (404), and method-not-allowed (405) errors, so
 API consumers never have to deal with Flask's default HTML error pages.
-
-There is no authentication/authorization on these endpoints yet - that is
-planned for a future change, once an admin role exists.
 """
 
 import logging
@@ -21,6 +18,7 @@ from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from api.extensions import limiter
 from db.schemas import SessionLocal
 from models.guest import GuestCreate, GuestRead, GuestUpdate
 from services.guest_service import GuestService
@@ -121,6 +119,7 @@ def _parse_body(model: type[GuestCreate] | type[GuestUpdate], payload: object) -
 
 
 @bp.get("")
+@limiter.limit("30 per minute")
 def list_guests() -> Response:
     """List all guests.
 
@@ -138,6 +137,7 @@ def list_guests() -> Response:
 
 
 @bp.post("")
+@limiter.limit("5 per minute")
 def create_guest() -> Response:
     """Create a new guest record.
 
@@ -164,6 +164,7 @@ def create_guest() -> Response:
 
 
 @bp.get("/<int:guest_id>")
+@limiter.limit("30 per minute")
 def get_guest(guest_id: int) -> Response:
     """Get a single guest by ID.
 
@@ -186,6 +187,7 @@ def get_guest(guest_id: int) -> Response:
 
 
 @bp.put("/<int:guest_id>")
+@limiter.limit("5 per minute")
 def update_guest(guest_id: int) -> Response:
     """Update an existing guest record.
 
@@ -214,6 +216,7 @@ def update_guest(guest_id: int) -> Response:
 
 
 @bp.delete("/<int:guest_id>")
+@limiter.limit("5 per minute")
 def delete_guest(guest_id: int) -> Response:
     """Delete a guest record.
 
