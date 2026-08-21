@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block description %}Admin login.{% endblock %}
+
+{% block header %}{{ config.app_name }} - Admin{% endblock %}
+
+{% block content %}
+    {% if error %}
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="{{ url_for('admin.login') }}">
+        <div class="form-group">
+            <label for="password">Lösenord</label>
+            <input
+                type="password"
+                class="form-control"
+                id="password"
+                name="password"
+                required
+                autofocus
+                >
+        </div>
+        <button type="submit" class="btn btn-primary">Logga in</button>
+    </form>
+{% endblock %}

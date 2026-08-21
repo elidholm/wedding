@@ -5,6 +5,77 @@ import unittest
 from main import app
 
 
+class TestAdminPages(unittest.TestCase):
+    """Test cases for the admin blueprint's routes and auth guard."""
+
+    def setUp(self):
+        """Build a Flask app and test client for each test, with a known admin password."""
+        self.client = app.test_client()
+        self.config = app.config["CONFIG"]
+        self._original_admin_password = self.config.admin_password
+        self.config.admin_password = "correct-horse-battery-staple"
+        self._original_secret_key = app.config.get("SECRET_KEY")
+        app.config["SECRET_KEY"] = app.config["SECRET_KEY"] or "test-secret-key"
+
+    def tearDown(self):
+        """Restore the original admin password and secret key configuration."""
+        self.config.admin_password = self._original_admin_password
+        app.config["SECRET_KEY"] = self._original_secret_key
+
+    def test_admin_home_redirects_to_login_when_unauthenticated(self):
+        """Test that GET /admin/ redirects to the login page when not logged in."""
+        response = self.client.get("/admin/")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login", response.location)
+
+    def test_login_page_renders_successfully(self):
+        """Test that GET /admin/login renders the login form."""
+        response = self.client.get("/admin/login")
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_login_with_wrong_password_fails(self):
+        """Test that POSTing an incorrect password re-renders the login form with an error."""
+        response = self.client.post("/admin/login", data={"password": "wrong"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Incorrect password", response.data)
+
+        with self.client.session_transaction() as session:
+            self.assertNotIn("is_admin", session)
+
+    def test_login_with_correct_password_redirects_to_admin_home(self):
+        """Test that POSTing the correct password logs the admin in and redirects to /admin/."""
+        response = self.client.post("/admin/login", data={"password": "correct-horse-battery-staple"})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin", response.location)
+
+        with self.client.session_transaction() as session:
+            self.assertTrue(session.get("is_admin"))
+
+    def test_admin_home_renders_when_authenticated(self):
+        """Test that GET /admin/ renders the dummy admin page once logged in."""
+        self.client.post("/admin/login", data={"password": "correct-horse-battery-staple"})
+
+        response = self.client.get("/admin/")
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_logout_clears_session_and_relocks_admin_home(self):
+        """Test that GET /admin/logout logs the admin out, re-locking /admin/."""
+        self.client.post("/admin/login", data={"password": "correct-horse-battery-staple"})
+
+        logout_response = self.client.get("/admin/logout")
+        self.assertEqual(logout_response.status_code, 302)
+        self.assertIn("/admin/login", logout_response.location)
+
+        home_response = self.client.get("/admin/")
+        self.assertEqual(home_response.status_code, 302)
+        self.assertIn("/admin/login", home_response.location)
+
+
 class TestHomePage(unittest.TestCase):
     """Test cases for the home page."""
 
