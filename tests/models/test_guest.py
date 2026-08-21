@@ -43,6 +43,21 @@ class TestGuestCreate(unittest.TestCase):
         self.assertEqual(guest.allergies, "peanuts, lactose")
         self.assertEqual(guest.food_preferences, "vegetarian")
 
+    def test_rejects_an_invalid_email_format(self):
+        """Test that constructing a GuestCreate with a malformed email raises a ValidationError."""
+        with self.assertRaises(ValidationError):
+            GuestCreate(name="Jane Doe", email="not-an-email")
+
+    def test_rejects_an_empty_name(self):
+        """Test that constructing a GuestCreate with an empty name raises a ValidationError."""
+        with self.assertRaises(ValidationError):
+            GuestCreate(name="")
+
+    def test_rejects_a_name_over_the_length_limit(self):
+        """Test that constructing a GuestCreate with an over-long name raises a ValidationError."""
+        with self.assertRaises(ValidationError):
+            GuestCreate(name="x" * 121)
+
 
 class TestGuestUpdate(unittest.TestCase):
     """Test cases for the GuestUpdate model."""
@@ -62,6 +77,16 @@ class TestGuestUpdate(unittest.TestCase):
         update = GuestUpdate(attending=True, allergies="peanuts, lactose")
 
         self.assertEqual(update.model_dump(exclude_unset=True), {"attending": True, "allergies": "peanuts, lactose"})
+
+    def test_rejects_an_invalid_email_format(self):
+        """Test that constructing a GuestUpdate with a malformed email raises a ValidationError."""
+        with self.assertRaises(ValidationError):
+            GuestUpdate(email="not-an-email")
+
+    def test_rejects_a_name_over_the_length_limit(self):
+        """Test that constructing a GuestUpdate with an over-long name raises a ValidationError."""
+        with self.assertRaises(ValidationError):
+            GuestUpdate(name="x" * 121)
 
 
 class TestGuestRead(unittest.TestCase):

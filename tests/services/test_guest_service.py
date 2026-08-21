@@ -1,8 +1,10 @@
 """Unit tests for the services.guest_service module."""
 
 import unittest
+from unittest.mock import MagicMock
 
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
 from db.schemas import Base
@@ -43,6 +45,31 @@ class TestCreateGuest(GuestServiceTestCase):
 
         self.assertIsNotNone(fetched)
         self.assertEqual(fetched.name, "Jane Doe")
+
+    def test_persists_email_attending_allergies_and_food_preferences(self):
+        """Test that create_guest persists every optional field, not just name/plus_one."""
+        guest = self.service.create_guest(
+            name="Jane Doe",
+            email="jane@example.com",
+            attending=True,
+            allergies="peanuts",
+            food_preferences="vegan",
+        )
+
+        self.assertEqual(guest.email, "jane@example.com")
+        self.assertTrue(guest.attending)
+        self.assertEqual(guest.allergies, "peanuts")
+        self.assertEqual(guest.food_preferences, "vegan")
+
+    def test_rolls_back_and_reraises_on_a_database_error(self):
+        """Test that a commit failure during create_guest rolls back and re-raises."""
+        self.session.commit = MagicMock(side_effect=SQLAlchemyError("boom"))
+        self.session.rollback = MagicMock()
+
+        with self.assertRaises(SQLAlchemyError):
+            self.service.create_guest(name="Jane Doe")
+
+        self.session.rollback.assert_called_once()
 
 
 class TestGetGuest(GuestServiceTestCase):
@@ -117,6 +144,17 @@ class TestUpdateGuest(GuestServiceTestCase):
         self.assertIsNotNone(updated.attending)
         self.assertFalse(updated.attending)
 
+    def test_rolls_back_and_reraises_on_a_database_error(self):
+        """Test that a commit failure during update_guest rolls back and re-raises."""
+        created = self.service.create_guest(name="Jane Doe")
+        self.session.commit = MagicMock(side_effect=SQLAlchemyError("boom"))
+        self.session.rollback = MagicMock()
+
+        with self.assertRaises(SQLAlchemyError):
+            self.service.update_guest(created.id, attending=True)
+
+        self.session.rollback.assert_called_once()
+
 
 class TestDeleteGuest(GuestServiceTestCase):
     """Test cases for GuestService.delete_guest."""
@@ -133,6 +171,17 @@ class TestDeleteGuest(GuestServiceTestCase):
 
         self.assertTrue(deleted)
         self.assertIsNone(self.service.get_guest(created.id))
+
+    def test_rolls_back_and_reraises_on_a_database_error(self):
+        """Test that a commit failure during delete_guest rolls back and re-raises."""
+        created = self.service.create_guest(name="Jane Doe")
+        self.session.commit = MagicMock(side_effect=SQLAlchemyError("boom"))
+        self.session.rollback = MagicMock()
+
+        with self.assertRaises(SQLAlchemyError):
+            self.service.delete_guest(created.id)
+
+        self.session.rollback.assert_called_once()
 
 
 if __name__ == "__main__":
