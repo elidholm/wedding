@@ -162,6 +162,14 @@ class TestConfigLoadEnvOverrides(unittest.TestCase):
         with patch.dict(os.environ, {"SECRET_KEY": "super-secret"}):
             self.assertEqual(Config.load(self.config_file).secret_key, "super-secret")
 
+    def test_wrong_type_env_override_logs_error(self):
+        """Test that an environment variable with the wrong type logs an error and does not override."""
+        with patch.dict(os.environ, {"PORT": "not-an-int"}), self.assertLogs("core.config", level="ERROR") as log:
+            new_config = Config.load(self.config_file)
+
+            self.assertIn("Invalid value for PORT", log.output[0])
+            self.assertEqual(new_config.port, 1234)
+
 
 class TestContactInfo(unittest.TestCase):
     """Test cases for the ContactInfo class."""

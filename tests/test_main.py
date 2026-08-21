@@ -228,5 +228,20 @@ class TestTableInfoPage(unittest.TestCase):
         self.assertIn(b"12345", response.data)
 
 
+class TestHealthCheckEndpoint(unittest.TestCase):
+    """Test cases for the health check endpoint."""
+
+    def setUp(self):
+        """Build a Flask app and test client for each test."""
+        self.client = app.test_client()
+
+    def test_health_check_endpoint_returns_healthy_status(self):
+        """Test that GET /api/v1/health returns a healthy status and HTTP 200."""
+        response = self.client.get("/api/v1/health")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {"status": "healthy"})
+
+
 if __name__ == "__main__":
     unittest.main()
