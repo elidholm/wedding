@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from sqlalchemy.exc import SQLAlchemyError
 
+from api.extensions import limiter
 from db.schemas import Guest, SessionLocal
 from main import app
 
@@ -15,6 +16,7 @@ class GuestsApiTestCase(unittest.TestCase):
     def setUp(self):
         """Build a fresh test client and clear the shared in-memory guests table."""
         self.client = app.test_client()
+        limiter.reset()
         session = SessionLocal()
         try:
             session.query(Guest).delete()
@@ -278,6 +280,18 @@ class TestMethodNotAllowed(GuestsApiTestCase):
 
         self.assertEqual(response.status_code, 405)
         self.assertIn("error", response.get_json())
+
+
+class TestRateLimit(GuestsApiTestCase):
+    """Test cases for rate limiting on guests endpoints."""
+
+    def test_rate_limit_exceeded_returns_json_429(self):
+        """Test that exceeding the rate limit returns a JSON 429."""
+        for _ in range(30):
+            self.client.get("/api/v1/guests")
+
+        response = self.client.get("/api/v1/guests")
+        self.assertEqual(response.status_code, 429)
 
 
 if __name__ == "__main__":

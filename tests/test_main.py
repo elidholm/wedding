@@ -2,6 +2,7 @@
 
 import unittest
 
+from api.extensions import limiter
 from main import app
 
 
@@ -11,6 +12,7 @@ class TestAdminPages(unittest.TestCase):
     def setUp(self):
         """Build a Flask app and test client for each test, with a known admin password."""
         self.client = app.test_client()
+        limiter.reset()
         self.config = app.config["CONFIG"]
         self._original_admin_password = self.config.admin_password
         self.config.admin_password = "correct-horse-battery-staple"
