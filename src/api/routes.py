@@ -16,6 +16,7 @@ from typing import cast
 from flask import Flask, Response, jsonify, request
 from werkzeug.exceptions import HTTPException
 
+from api.extensions import limiter
 from api.v1.routes import register as register_v1
 
 API_PATH_PREFIX = "/api"
@@ -31,6 +32,7 @@ def register(app: Flask) -> None:
     Args:
         app (Flask): The Flask application to register the API blueprints on.
     """
+    limiter.init_app(app)
     register_v1(app, api_prefix=API_PATH_PREFIX)
 
     @app.errorhandler(405)
