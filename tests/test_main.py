@@ -95,6 +95,13 @@ class TestHomePage(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    def test_unsupported_method_on_a_non_api_route_returns_html_405(self):
+        """Test that a 405 outside /api/ falls back to Flask's default HTML error page."""
+        response = self.client.post("/home")
+
+        self.assertEqual(response.status_code, 405)
+        self.assertIn(b"text/html", response.headers.get("Content-Type", "").encode())
+
 
 class TestRsvpPage(unittest.TestCase):
     """Test cases for the rsvp blueprint's routes."""
