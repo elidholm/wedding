@@ -26,6 +26,8 @@ class GuestBase(BaseModel):
             preferences. Defaults to None.
     """
 
+    model_config = ConfigDict(from_attributes=True)
+
     name: str
     email: str | None = None
     attending: bool | None = None
@@ -53,6 +55,8 @@ class GuestUpdate(BaseModel):
             preferences.
     """
 
+    model_config = ConfigDict(from_attributes=True)
+
     name: str | None = None
     email: str | None = None
     attending: bool | None = None
@@ -68,8 +72,6 @@ class GuestRead(GuestBase):
         created_at (datetime): When the guest record was created.
         updated_at (datetime): When the guest record was last updated.
     """
-
-    model_config = ConfigDict(from_attributes=True)
 
     id: int
     created_at: datetime
