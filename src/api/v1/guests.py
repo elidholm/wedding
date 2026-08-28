@@ -115,7 +115,11 @@ def _parse_body(model: type[GuestCreate] | type[GuestUpdate], payload: object) -
     try:
         return model.model_validate(payload)
     except ValidationError as exc:
-        return _error("Invalid request data.", 400, details=exc.errors(include_url=False, include_context=False))
+        return _error(
+            "Invalid request data.",
+            400,
+            details=exc.errors(include_url=False, include_context=False),
+        )
 
 
 @bp.get("")
@@ -133,7 +137,10 @@ def list_guests() -> Response:
     except SQLAlchemyError:
         _log.exception("Failed to list guests.")
         return _error("Failed to list guests.", 500)
-    return _json([GuestRead.model_validate(guest).model_dump(mode="json") for guest in guests], 200)
+    return _json(
+        [GuestRead.model_validate(guest).model_dump(mode="json") for guest in guests],
+        200,
+    )
 
 
 @bp.post("")
