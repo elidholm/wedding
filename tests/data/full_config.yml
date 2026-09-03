@@ -16,6 +16,11 @@ toast_master_contact:
   - name: Toast Master 2
     email: toast_master_2@wedding.com
     phone: (+46)72-222 22 22
+date:
+  day: 24
+  month: 12
+  year: 1969
+  time: 15:00
 venue:
     name: The Wedding Venue
     address: 123 Wedding St
