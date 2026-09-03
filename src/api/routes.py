@@ -42,4 +42,5 @@ def register(app: Flask) -> None:
             response = jsonify({"error": "Method not allowed."})
             response.status_code = 405
             return response
+
         return cast(Response, Response.force_type(exc.get_response(), request.environ))
