@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help install fmt fmt-check lint lint-fix check test html-lint shell-lint toml-lint lock-check ci \
+.PHONY: help install fmt fmt-check lint lint-fix check test html-lint shell-lint toml-lint css-lint lock-check ci \
 	run dev stop run-local docker docker-up docker-down docker-logs shell clean
 
 help: ## Show this help
@@ -41,10 +41,13 @@ shell-lint: ## Lint the shell scripts with shellcheck
 toml-lint: ## Lint the TOML files with taplo
 	uv run taplo lint
 
+css-lint: ## Lint the CSS files with stylelint
+	uv run npx stylelint "**/*.css"
+
 lock-check: ## Check that the uv.lock file is up to date
 	uv sync --locked
 
-ci: fmt-check lint check test html-lint shell-lint toml-lint lock-check ## Pre-push CI gate
+ci: fmt-check lint check test html-lint shell-lint toml-lint css-lint lock-check ## Pre-push CI gate
 
 run: ## Tear down and spin up the app via Docker Compose (./run.sh)
 	./run.sh
@@ -75,4 +78,4 @@ shell: ## Open a shell in the app container
 
 clean: ## Remove regenerable caches (__pycache__, ruff/pytest caches)
 	find . -type d -name '__pycache__' -not -path './.venv/*' -exec rm -rf {} +
-	rm -rf .ruff_cache .pytest_cache .mypy_cache
+	rm -rf .ruff_cache .pytest_cache .mypy_cache tests/screenshots

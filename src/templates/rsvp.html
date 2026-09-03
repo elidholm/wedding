@@ -8,14 +8,21 @@
 
 {% block content %}
     <p>Här kan du OSA till vårt bröllop och meddela oss om eventuella allergier eller specialkost.</p>
-    <br>
     <p>För att OSA eller ändra dina tidigare svar, vänligen ange ditt sexsiffriga personliga ID-nummer som finns på din inbjudan.</p>
-    <br>
 
-    <form method="post" action="{{ url_for('rsvp.rsvp') }}">
+    <form class="wed-form wed-section" method="post" action="{{ url_for('rsvp.rsvp') }}">
         <div class="mb-3">
-            <label for="guest_id">Personligt ID-nummer:</label>
-            <input type="number" class="form-control" id="guest_id" name="guest_id" placeholder="XXXXXX" min="100000" max="999999" required>
+            <label class="form-label" for="guest_id">Personligt ID-nummer:</label>
+            <input type="number"
+                   class="form-control"
+                   id="guest_id"
+                   name="guest_id"
+                   placeholder="XXXXXX"
+                   inputmode="numeric"
+                   autocomplete="off"
+                   min="100000"
+                   max="999999"
+                   required>
         </div>
         <button type="submit" class="btn btn-primary">OSA</button>
     </form>

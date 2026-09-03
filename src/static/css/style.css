@@ -1,0 +1,391 @@
+/* Wedding site theme: sage green + cream, mobile-first, fluid scaling. */
+
+:root {
+  /* Palette */
+  --wed-sage: #7d9075;
+  --wed-sage-dark: #5c6d56;
+  --wed-sage-light: #a8b8a0;
+  --wed-cream: #f3ece1;
+  --wed-offwhite: #faf7f1;
+  --wed-ink: #2f3a2c;
+  --wed-muted: #6b7566;
+  --wed-accent: #b9a26b;
+  --wed-border: rgb(125 144 117 / 25%);
+
+  /* Fluid spacing + radii */
+  --wed-space-section: clamp(1.5rem, 1rem + 3vw, 3.5rem);
+  --wed-space-block: clamp(0.75rem, 0.5rem + 1.5vw, 1.5rem);
+  --wed-gutter: clamp(1rem, 0.5rem + 2.5vw, 2rem);
+  --wed-radius: 0.75rem;
+
+  /* Typography */
+  --wed-font-heading: "Cormorant Garamond", georgia, "Times New Roman", serif;
+  --wed-font-body:
+    "Source Sans 3", -apple-system, blinkmacsystemfont, "Segoe UI", roboto,
+    helvetica, arial, sans-serif;
+
+  /* Bootstrap variable overrides so its components adopt the palette. */
+  --bs-body-bg: var(--wed-offwhite);
+  --bs-body-color: var(--wed-ink);
+  --bs-body-font-family: var(--wed-font-body);
+  --bs-primary: var(--wed-sage);
+  --bs-primary-rgb: 125, 144, 117;
+  --bs-link-color: var(--wed-sage-dark);
+  --bs-link-color-rgb: 92, 109, 86;
+  --bs-link-hover-color: var(--wed-ink);
+  --bs-link-hover-color-rgb: 47, 58, 44;
+  --bs-border-color: var(--wed-border);
+  --bs-secondary-color: var(--wed-muted);
+  --bs-emphasis-color: var(--wed-ink);
+}
+
+/* Overflow guards: nothing may force the document wider than the viewport.
+ *
+ * Deliberately NOT using `overflow-x: hidden` on html/body -- that would only
+ * mask overflow (hiding real layout bugs from tests) and it breaks
+ * `position: sticky` on the navbar. Elements are constrained at the source
+ * instead.
+ */
+img,
+iframe,
+svg,
+video,
+canvas,
+table {
+  max-width: 100%;
+}
+
+body {
+  font-family: var(--wed-font-body);
+  overflow-wrap: anywhere;
+}
+
+/* Long unbroken strings (emails, addresses) must wrap, not overflow. */
+a,
+code,
+p,
+li {
+  overflow-wrap: anywhere;
+}
+
+/* Fluid typography: continuous scaling instead of breakpoint snapping. */
+h1,
+.h1 {
+  font-family: var(--wed-font-heading);
+  font-size: clamp(1.9rem, 1.3rem + 3vw, 3.25rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+}
+
+h2,
+.h2 {
+  font-family: var(--wed-font-heading);
+  font-size: clamp(1.45rem, 1.1rem + 1.7vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.2;
+  margin-top: var(--wed-space-block);
+}
+
+h3,
+.h3 {
+  font-family: var(--wed-font-heading);
+  font-size: clamp(1.2rem, 1rem + 1vw, 1.6rem);
+  font-weight: 600;
+}
+
+h4,
+.h4 {
+  font-family: var(--wed-font-heading);
+  font-size: clamp(1.05rem, 0.95rem + 0.6vw, 1.3rem);
+  font-weight: 600;
+}
+
+p,
+li {
+  font-size: clamp(1rem, 0.97rem + 0.15vw, 1.075rem);
+  line-height: 1.65;
+}
+
+/* Fluid container gutters so 320px screens keep usable content width. */
+.container,
+.container-fluid {
+  padding-inline: var(--wed-gutter);
+}
+
+/* Navigation */
+.wed-navbar {
+  background-color: var(--wed-sage-dark);
+  box-shadow: 0 1px 6px rgb(47 58 44 / 18%);
+}
+
+.wed-navbar .navbar-brand {
+  font-family: var(--wed-font-heading);
+  font-size: clamp(1.1rem, 0.95rem + 0.8vw, 1.5rem);
+  font-weight: 600;
+  color: var(--wed-cream);
+  letter-spacing: 0.02em;
+}
+
+.wed-navbar .navbar-brand:hover,
+.wed-navbar .navbar-brand:focus {
+  color: #fff;
+}
+
+.wed-navbar .nav-link {
+  color: rgb(243 236 225 / 85%);
+  padding-block: 0.6rem;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.wed-navbar .nav-link:hover,
+.wed-navbar .nav-link:focus {
+  color: #fff;
+}
+
+.wed-navbar .nav-link.active {
+  color: #fff;
+  border-bottom-color: var(--wed-accent);
+}
+
+.wed-navbar .navbar-toggler {
+  border-color: rgb(243 236 225 / 40%);
+  padding: 0.35rem 0.6rem;
+}
+
+.wed-navbar .navbar-toggler:focus {
+  box-shadow: 0 0 0 0.2rem rgb(185 162 107 / 45%);
+}
+
+/* Page header + content rhythm */
+.wed-page-header {
+  margin-block: var(--wed-space-section) var(--wed-space-block);
+  text-align: center;
+  color: var(--wed-sage-dark);
+}
+
+.wed-content > :last-child {
+  margin-bottom: 0;
+}
+
+.wed-section {
+  margin-block: var(--wed-space-section);
+}
+
+/* Home hero */
+.wed-hero {
+  margin-block: var(--wed-space-section);
+  padding: var(--wed-space-section) var(--wed-gutter);
+  border: 1px solid var(--wed-border);
+  border-radius: var(--wed-radius);
+  background-color: var(--wed-cream);
+  text-align: center;
+}
+
+.wed-hero__names {
+  margin-bottom: var(--wed-space-block);
+  color: var(--wed-sage-dark);
+}
+
+.wed-hero__date,
+.wed-hero__venue {
+  margin-bottom: 0.35rem;
+  font-size: clamp(1rem, 0.9rem + 0.6vw, 1.25rem);
+  color: var(--wed-muted);
+}
+
+.wed-hero__rule {
+  width: min(12rem, 60%);
+  margin: var(--wed-space-block) auto;
+  border: 0;
+  border-top: 1px solid var(--wed-accent);
+  opacity: 1;
+}
+
+/* Countdown */
+.wed-countdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.4rem, 0.2rem + 1.5vw, 1.25rem);
+  max-width: 34rem;
+  margin: var(--wed-space-block) auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Four across as soon as there is room; a balanced 2x2 below that. */
+@media (width >= 24em) {
+  .wed-countdown {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.wed-countdown__item {
+  padding: 0.5rem clamp(0.25rem, 0.1rem + 1vw, 0.9rem);
+  border: 1px solid var(--wed-border);
+  border-radius: var(--wed-radius);
+  background-color: var(--wed-offwhite);
+}
+
+.wed-countdown__value {
+  display: block;
+  font-family: var(--wed-font-heading);
+  font-size: clamp(1.4rem, 1.1rem + 1.6vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--wed-sage-dark);
+}
+
+.wed-countdown__label {
+  display: block;
+  font-size: clamp(0.7rem, 0.68rem + 0.15vw, 0.8rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--wed-muted);
+}
+
+.wed-countdown__message {
+  margin-top: var(--wed-space-block);
+  font-family: var(--wed-font-heading);
+  font-size: clamp(1.2rem, 1rem + 1vw, 1.6rem);
+  color: var(--wed-sage-dark);
+}
+
+/* Responsive map embed: replaces the old fixed 600x450 iframe. */
+.wed-map {
+  position: relative;
+  width: 100%;
+  max-height: clamp(18rem, 55vh, 32rem);
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border: 1px solid var(--wed-border);
+  border-radius: var(--wed-radius);
+}
+
+.wed-map iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+@media (width >= 36em) {
+  .wed-map {
+    aspect-ratio: 4 / 3;
+  }
+}
+
+@media (width >= 62em) {
+  .wed-map {
+    aspect-ratio: 16 / 9;
+  }
+}
+
+.wed-map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+/* Forms */
+.wed-form {
+  max-width: 28rem;
+}
+
+.wed-form .form-control {
+  padding-block: 0.65rem;
+  font-size: 1rem;
+}
+
+.wed-form .form-control:focus {
+  border-color: var(--wed-sage);
+  box-shadow: 0 0 0 0.2rem rgb(125 144 117 / 30%);
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--wed-sage);
+  --bs-btn-border-color: var(--wed-sage);
+  --bs-btn-hover-bg: var(--wed-sage-dark);
+  --bs-btn-hover-border-color: var(--wed-sage-dark);
+  --bs-btn-active-bg: var(--wed-sage-dark);
+  --bs-btn-active-border-color: var(--wed-sage-dark);
+  --bs-btn-focus-shadow-rgb: 125, 144, 117;
+
+  padding-block: 0.6rem;
+}
+
+/* Full-width primary actions on phones for comfortable touch targets. */
+.wed-form .btn {
+  width: 100%;
+}
+
+@media (width >= 36em) {
+  .wed-form .btn {
+    width: auto;
+    min-width: 10rem;
+  }
+}
+
+/* Accordion */
+.accordion {
+  --bs-accordion-btn-focus-box-shadow: 0 0 0 0.2rem rgb(125 144 117 / 30%);
+  --bs-accordion-active-bg: var(--wed-cream);
+  --bs-accordion-active-color: var(--wed-sage-dark);
+  --bs-accordion-border-color: var(--wed-border);
+  --bs-accordion-bg: var(--wed-offwhite);
+}
+
+.accordion-button {
+  font-family: var(--wed-font-heading);
+  font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.25rem);
+  font-weight: 600;
+}
+
+/* Contact list */
+.wed-contact-list {
+  padding-left: 1.1rem;
+}
+
+.wed-contact-list ul {
+  margin-top: 0.25rem;
+  padding-left: 1.1rem;
+  list-style: none;
+}
+
+.wed-contact-list li {
+  margin-bottom: 0.25rem;
+}
+
+/* Footer */
+.wed-footer {
+  gap: 0.5rem;
+  margin-top: var(--wed-space-section);
+  padding-block: var(--wed-space-block);
+  border-top: 1px solid var(--wed-border);
+  color: var(--wed-muted);
+}
+
+.wed-footer .nav-link {
+  color: var(--wed-muted);
+}
+
+.wed-footer .nav-link:hover,
+.wed-footer .nav-link:focus {
+  color: var(--wed-sage-dark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
