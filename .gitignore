@@ -82,3 +82,10 @@ dmypy.json
 # OS-specific
 .DS_Store
 Thumbs.db
+
+# Node (stylelint is run via npx, not committed)
+node_modules/
+package-lock.json
+
+# Playwright responsive-test screenshots
+tests/screenshots/

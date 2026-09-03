@@ -116,6 +116,26 @@ make ci  # runs every check above together — the same gate CI runs
 
 Run `make help` for the full list of targets (including `make fmt`/ `make lint-fix` for auto-fixing, and `make clean` to remove regenerable caches).
 
+### Responsive-layout tests
+
+`tests/test_responsive.py` renders the real pages in headless Chromium at 320/375/768/1440px and asserts that nothing forces the document wider than the viewport, so the site can't silently regress into needing horizontal scrolling on a phone. It also writes a screenshot of every page/width combination for eyeballing.
+
+These tests need a browser binary, which isn't installed by `make install`:
+
+```bash
+uv run playwright install chromium
+```
+
+Without it the whole module is skipped, so `make test` still passes on a machine that hasn't run the above. Screenshots go to `tests/screenshots/` by default; override with `WEDDING_SCREENSHOT_DIR=/some/path`.
+
+### CSS
+
+The custom stylesheet lives in `src/static/css/style.css` and is linked *after* Bootstrap so it can override Bootstrap's CSS custom properties (`--bs-*`) — the palette and typography are set that way rather than by recompiling Bootstrap's Sass. Theme values are defined as custom properties in the `:root` block at the top of the file. Lint it with:
+
+```bash
+npx stylelint "**/*.css"   # config: .stylelintrc.json
+```
+
 ## Pre-commit hooks
 
 `make install` installs [pre-commit](https://pre-commit.com/) hooks (configured in `.pre-commit-config.yaml`) that automatically run fast, file-scoped checks (ruff lint/format, trailing whitespace, end-of-file fixer, TOML/YAML validation) on every commit. If you skipped `make install`, you can install them separately with:
@@ -124,7 +144,7 @@ Run `make help` for the full list of targets (including `make fmt`/ `make lint-f
 uv run pre-commit install
 ```
 
-These hooks are a fast first line of defense — they don't replace running `make ci` before pushing, since `make ci` covers more (mypy, tests, djlint, shellcheck, taplo, lockfile check).
+These hooks are a fast first line of defense — they don't replace running `make ci` before pushing, since `make ci` covers more (mypy, tests, djlint, shellcheck, taplo, css, lockfile check).
 
 ## Continuous integration & deployment
 

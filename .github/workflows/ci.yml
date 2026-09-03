@@ -178,7 +178,7 @@ jobs:
   css-lint:
     name: CSS lint (stylelint)
     needs: changes
-    if: ${{ needs.changes.outputs.css == 'true' && false }} # Disabled for now
+    if: ${{ needs.changes.outputs.css == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -192,22 +192,8 @@ jobs:
       - name: Install stylelint
         run: npm install --no-save stylelint stylelint-config-standard
 
-      - name: Create minimal stylelint config (if none exists)
-        run: |
-          if ! git ls-files | grep -qE '^\.stylelintrc|stylelint\.config\.'; then
-            echo '{ "extends": "stylelint-config-standard" }' > .stylelintrc.ci.json
-            echo "STYLELINT_CONFIG=.stylelintrc.ci.json" >> "$GITHUB_ENV"
-          else
-            echo "STYLELINT_CONFIG=" >> "$GITHUB_ENV"
-          fi
-
       - name: Run stylelint
-        run: |
-          if [ -n "$STYLELINT_CONFIG" ]; then
-            npx stylelint "**/*.css" --config "$STYLELINT_CONFIG"
-          else
-            npx stylelint "**/*.css"
-          fi
+        run: npx stylelint "**/*.css"
 
   markdown-lint:
     name: Markdown lint (markdownlint-cli2)

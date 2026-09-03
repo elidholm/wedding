@@ -16,54 +16,99 @@
 
 {% block header %}{{ config.app_name }} - Välkommen{% endblock %}
 
+{% block page_header %}{% endblock %}
+
 {% block content %}
-    <p>Välkommen till Edvin & Elinores bröllopssida!</p>
+    <section class="wed-hero">
+        <h1 class="wed-hero__names">{{ config.app_name }}</h1>
+        <hr class="wed-hero__rule">
+        {% if config.date %}
+            {% set wedding_iso = "%04d-%02d-%02dT%s:00" | format(config.date.year, config.date.month, config.date.day, config.date.time) %}
+            <p class="wed-hero__date">
+                <time datetime="{{ wedding_iso }}">
+                    {{ weekday_name(config.date.weekday) | trim }} den {{ config.date.day }} {{ month_name(config.date.month) | trim | lower }} {{ config.date.year }}, kl. {{ config.date.time }}
+                </time>
+            </p>
+        {% endif %}
+        {% if config.venue %}
+            <p class="wed-hero__venue">{{ config.venue.name }}{% if config.venue.city %}, {{ config.venue.city }}{% endif %}</p>
+        {% endif %}
+        {% if config.date %}
+            <div id="countdown" class="wed-countdown-wrapper" data-wedding-datetime="{{ wedding_iso }}">
+                <noscript>
+                    <p class="wed-countdown__message">Vi ses på bröllopet!</p>
+                </noscript>
+            </div>
+        {% endif %}
+    </section>
+
+    <p>Välkommen till Edvin &amp; Elinores bröllopssida!</p>
     <p>Här kommer du snart kunna hitta information om bröllopet, samt OSA-formuläret.</p>
+
     {% if config.date %}
-        <h2>Datum och tid</h2>
-        <p>Bröllopet kommer att äga rum <strong>{{ weekday_name(config.date.weekday) }}</strong> den <strong>{{ config.date.day }} {{ month_name(config.date.month) }} {{ config.date.year }}</strong> klockan <strong>{{ config.date.time }}</strong>.</p>
+        <section class="wed-section">
+            <h2>Datum och tid</h2>
+            <p>Bröllopet kommer att äga rum <strong>{{ weekday_name(config.date.weekday) }}</strong> den <strong>{{ config.date.day }} {{ month_name(config.date.month) }} {{ config.date.year }}</strong> klockan <strong>{{ config.date.time }}</strong>.</p>
+        </section>
     {% endif %}
 
     {% if config.venue %}
-        <h2>Plats</h2>
-        <p>Bröllopet kommer att hållas på <strong>{{ config.venue.name }}</strong>{% if config.venue.city %} i <strong>{{ config.venue.city }}</strong>{% endif %}.</p>
-        <p>Adress: <strong>{{ config.venue.address }}</strong></p>
-        {% if config.googlemaps_key %}
-            <iframe
-                width="600"
-                height="450"
-                style="border:0"
-                loading="lazy"
-                allowfullscreen
-                referrerpolicy="no-referrer-when-downgrade"
-                src="https://www.google.com/maps/embed/v1/place?key={{ config.googlemaps_key }}&q={{ config.venue.name | urlencode }},{{ config.venue.address | urlencode }}">
-            </iframe>
-        {% endif %}
+        <section class="wed-section">
+            <h2>Plats</h2>
+            <p>Bröllopet kommer att hållas på <strong>{{ config.venue.name }}</strong>{% if config.venue.city %} i <strong>{{ config.venue.city }}</strong>{% endif %}.</p>
+            <p>Adress: <strong>{{ config.venue.address }}</strong></p>
+            {% set venue_query = (config.venue.name ~ ", " ~ config.venue.address) | urlencode %}
+            {% if config.googlemaps_key %}
+                <div class="wed-map">
+                    <iframe
+                        title="Karta till {{ config.venue.name }}"
+                        loading="lazy"
+                        allowfullscreen
+                        referrerpolicy="no-referrer-when-downgrade"
+                        src="https://www.google.com/maps/embed/v1/place?key={{ config.googlemaps_key }}&q={{ venue_query }}">
+                    </iframe>
+                </div>
+            {% endif %}
+            <a class="wed-map-link"
+               href="https://www.google.com/maps/search/?api=1&query={{ venue_query }}"
+               target="_blank"
+               rel="noopener noreferrer">
+                <i class="fa fa-map-marker"></i> Öppna i Google Maps
+            </a>
+        </section>
     {% endif %}
 
     {% if config.faq %}
-        <h2>Vanliga frågor</h2>
-        <div class="accordion mb-4" id="faqSection">
-            {% for entry in config.faq %}
-                <div class="accordion-item">
-                    <h3 class="accordion-header" id="faq-heading-{{ loop.index }}">
-                        <button class="accordion-button collapsed"
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#faq-collapse-{{ loop.index }}"
-                                aria-expanded="false"
-                                aria-controls="faq-collapse-{{ loop.index }}">
-                            {{ entry.question }}
-                        </button>
-                    </h3>
-                    <div id="faq-collapse-{{ loop.index }}"
-                         class="accordion-collapse collapse"
-                         aria-labelledby="faq-heading-{{ loop.index }}"
-                         data-bs-parent="#faqSection">
-                        <div class="accordion-body">{{ entry.answer }}</div>
+        <section class="wed-section">
+            <h2>Vanliga frågor</h2>
+            <div class="accordion mb-4" id="faqSection">
+                {% for entry in config.faq %}
+                    <div class="accordion-item">
+                        <h3 class="accordion-header" id="faq-heading-{{ loop.index }}">
+                            <button class="accordion-button collapsed"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#faq-collapse-{{ loop.index }}"
+                                    aria-expanded="false"
+                                    aria-controls="faq-collapse-{{ loop.index }}">
+                                {{ entry.question }}
+                            </button>
+                        </h3>
+                        <div id="faq-collapse-{{ loop.index }}"
+                             class="accordion-collapse collapse"
+                             aria-labelledby="faq-heading-{{ loop.index }}"
+                             data-bs-parent="#faqSection">
+                            <div class="accordion-body">{{ entry.answer }}</div>
+                        </div>
                     </div>
-                </div>
-            {% endfor %}
-        </div>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    {% if config.date %}
+        <script src="{{ url_for('static', filename='js/countdown.js') }}" defer></script>
     {% endif %}
 {% endblock %}

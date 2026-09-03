@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 {% macro render_contact_info(contact) %}
-    <ul>
-        <li><i class="fa fa-envelope"></i> - <a href="mailto:{{ contact.email }}">{{ contact.email }}</a></li>
-        <li><i class="fa fa-phone"></i> - <a href="tel:{{ contact.phone }}">{{ contact.phone }}</a></li>
+    <ul class="wed-contact-list">
+        <li><i class="fa fa-envelope"></i> <a href="mailto:{{ contact.email }}">{{ contact.email }}</a></li>
+        <li><i class="fa fa-phone"></i> <a href="tel:{{ contact.phone | replace(' ', '') }}">{{ contact.phone }}</a></li>
     </ul>
 {% endmacro %}
 
@@ -16,13 +16,16 @@
     <p>Om du har några frågor eller funderingar kring bröllopet, tveka inte att kontakta oss!</p>
     {{ render_contact_info(config.wedding_couple_contact) }}
     {% if config.toast_master_contact | length >= 1 %}
-    <p>För frågor gällande middagen, var vänlig kontakta kvällens toastmaster{% if config.toast_master_contact | length >= 2 %}s{% endif %}:</p>
-    <ul>
-        {% for contact in config.toast_master_contact %}
-        <li>
-            <i class="fa fa-user"></i> {{ contact.name }}: {{ render_contact_info(contact) }}
-        </li>
-        {% endfor %}
-    </ul>
+        <section class="wed-section">
+            <p>För frågor gällande middagen, var vänlig kontakta kvällens toastmaster{% if config.toast_master_contact | length >= 2 %}s{% endif %}:</p>
+            <ul class="wed-contact-list">
+                {% for contact in config.toast_master_contact %}
+                    <li>
+                        <i class="fa fa-user"></i> {{ contact.name }}
+                        {{ render_contact_info(contact) }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
     {% endif %}
 {% endblock %}
