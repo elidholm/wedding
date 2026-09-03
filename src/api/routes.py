@@ -42,5 +42,13 @@ def register(app: Flask) -> None:
             response = jsonify({"error": "Method not allowed."})
             response.status_code = 405
             return response
+        return cast(Response, Response.force_type(exc.get_response(), request.environ))
 
+    @app.errorhandler(429)
+    def _handle_api_rate_limit_exceeded(exc: HTTPException) -> Response:
+        """Return a JSON 429 error for API requests, leaving other routes untouched."""
+        if request.path.startswith(API_PATH_PREFIX + "/"):
+            response = jsonify({"code": "rate_limited", "message": "Too many requests."})
+            response.status_code = 429
+            return response
         return cast(Response, Response.force_type(exc.get_response(), request.environ))

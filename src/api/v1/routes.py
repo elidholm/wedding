@@ -12,6 +12,7 @@ Attributes:
 
 from flask import Flask
 
+from api.v1.auth import bp as auth_bp
 from api.v1.guests import bp as guests_bp
 from api.v1.health import bp as health_bp
 
@@ -26,5 +27,6 @@ def register(app: Flask, api_prefix: str) -> None:
             blueprints on.
         api_prefix (str): The URL prefix for all API routes (e.g. ``/api``).
     """
+    app.register_blueprint(auth_bp, url_prefix=f"{api_prefix}/{VERSION}/auth")
     app.register_blueprint(health_bp, url_prefix=f"{api_prefix}/{VERSION}/health")
     app.register_blueprint(guests_bp, url_prefix=f"{api_prefix}/{VERSION}/guests")

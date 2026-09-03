@@ -5,11 +5,9 @@
 {% block header %}{{ config.app_name }} - Admin{% endblock %}
 
 {% block content %}
-    {% if error %}
-    <div class="alert alert-danger" role="alert">{{ error }}</div>
-    {% endif %}
-    <form method="post" action="{{ url_for('admin.login') }}">
-        <div class="mb-3">
+    <div id="login-error" class="alert alert-danger d-none" role="alert"></div>
+    <form id="admin-login-form" method="post" action="{{ url_for('auth.login') }}">
+        <div class="form-group mb-3">
             <label for="password">Lösenord</label>
             <input
                 type="password"
@@ -22,4 +20,35 @@
         </div>
         <button type="submit" class="btn btn-primary">Logga in</button>
     </form>
+    <script>
+        const loginForm = document.getElementById("admin-login-form");
+        const loginError = document.getElementById("login-error");
+
+        loginForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            loginError.classList.add("d-none");
+
+            try {
+                const response = await fetch("{{ url_for('auth.login') }}", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        password: document.getElementById("password").value,
+                    }),
+                });
+                const result = await response.json().catch(() => null);
+
+                if (response.ok && result?.code === "login_successful") {
+                    window.location.assign("{{ url_for('admin.admin_home') }}");
+                    return;
+                }
+
+                loginError.textContent = result?.message || "Login failed (${response.status}).";
+                loginError.classList.remove("d-none");
+            } catch {
+                loginError.textContent = "Login failed.";
+                loginError.classList.remove("d-none");
+            }
+        });
+    </script>
 {% endblock %}
