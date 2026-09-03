@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.config import Config, ContactInfo, FaqEntry, WeddingVenue
+from core.config import Config, ContactInfo, FaqEntry, WeddingDate, WeddingVenue
 
 
 class TestConfigClassLoad(unittest.TestCase):
@@ -34,6 +34,7 @@ class TestConfigClassLoad(unittest.TestCase):
                     ContactInfo(name="Toast Master 2", email="toast_master_2@wedding.com", phone="(+46)72-222 22 22"),
                 ],
             ),
+            ("date", WeddingDate(day=24, month=12, year=1969, time="15:00")),
             (
                 "venue",
                 WeddingVenue(
@@ -78,6 +79,7 @@ class TestConfigClassLoad(unittest.TestCase):
                     ContactInfo(name="Toast Master 2", email="toast_master_2@wedding.com", phone="(+46)72-222 22 22"),
                 ],
             ),
+            ("date", WeddingDate(day=24, month=12, year=1969, time="15:00")),
             (
                 "venue",
                 WeddingVenue(
@@ -132,6 +134,7 @@ class TestConfigClassLoad(unittest.TestCase):
             ("debug", True),  # Default value
             ("wedding_couple_contact", ContactInfo(email="test@email.com", phone="(+46)70-123 45 67")),
             ("toast_master_contact", []),  # Default value
+            ("date", None),  # Default value
             ("venue", None),  # Default value
             ("faq", []),  # Default value
         ]
@@ -230,6 +233,56 @@ class TestContactInfo(unittest.TestCase):
         """Test that a missing phone number raises a ValueError."""
         with self.assertRaises(ValueError):
             ContactInfo(email=self.valid_email, phone=None)
+
+
+class TestWeddingDate(unittest.TestCase):
+    """Test cases for the WeddingDate class."""
+
+    def setUp(self):
+        self.day = 24
+        self.month = 12
+        self.year = 1969
+        self.time = "10:30"
+
+    def test_valid_wedding_date(self):
+        """Test that a valid WeddingDate instance is created correctly."""
+        wedding_date = WeddingDate(day=self.day, month=self.month, year=self.year, time=self.time)
+
+        self.assertEqual(wedding_date.day, self.day)
+        self.assertEqual(wedding_date.month, self.month)
+        self.assertEqual(wedding_date.year, self.year)
+        self.assertEqual(wedding_date.time, self.time)
+
+        self.assertEqual(wedding_date.weekday, 2)  # December 24, 1969 was a Wednesday
+
+    def test_invalid_day_raises_value_error(self):
+        """Test that an invalid day raises a ValueError."""
+        for test_case in [-1, 0, 3.14, 32]:
+            with self.subTest(day=test_case), self.assertRaises(ValueError):
+                WeddingDate(day=test_case, month=self.month, year=self.year, time=self.time)
+
+    def test_invalid_month_raises_value_error(self):
+        """Test that an invalid month raises a ValueError."""
+        for test_case in [-1, 0, 3.14, 13]:
+            with self.subTest(month=test_case), self.assertRaises(ValueError):
+                WeddingDate(day=self.day, month=test_case, year=self.year, time=self.time)
+
+    def test_invalid_year_raises_value_error(self):
+        """Test that an invalid year raises a ValueError."""
+        for test_case in [-1, 3.14]:
+            with self.subTest(year=test_case), self.assertRaises(ValueError):
+                WeddingDate(day=self.day, month=self.month, year=test_case, time=self.time)
+
+    def test_invalid_date_combination_raises_value_error(self):
+        """Test that an invalid date combination raises a ValueError."""
+        with self.assertRaises(ValueError):
+            WeddingDate(day=31, month=2, year=self.year, time=self.time)  # February 31st is invalid
+
+    def test_invalid_time_format_raises_value_error(self):
+        """Test that an invalid time format raises a ValueError."""
+        for test_case in ["25:00", "12:60", "invalid-time", "1234"]:
+            with self.subTest(time=test_case), self.assertRaises(ValueError):
+                WeddingDate(day=self.day, month=self.month, year=self.year, time=test_case)
 
 
 class TestWeddingVenue(unittest.TestCase):

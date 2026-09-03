@@ -17,10 +17,11 @@ from __future__ import annotations
 import logging
 import os
 import re
+from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, Field, ValidationError, computed_field, field_validator, model_validator
 from pydantic_yaml import parse_yaml_file_as
 
 _log = logging.getLogger(__name__)
@@ -101,6 +102,54 @@ class WeddingVenue(BaseModel):
     city: str | None = None
 
 
+class WeddingDate(BaseModel):
+    """Information about the wedding date and time.
+
+    Attributes:
+        day (int): The day of the wedding date.
+        month (int): The month of the wedding date.
+        year (int): The year of the wedding date.
+        time (str): The time of the wedding in HH:MM format.
+        weekday (int | None): The weekday of the wedding date, where Monday is 0 and Sunday is 6.
+    """
+
+    day: int = Field(..., ge=1, le=31)
+    month: int = Field(..., ge=1, le=12)
+    year: int = Field(..., ge=0)
+    time: str
+
+    @field_validator("time")
+    @classmethod
+    def validate_time(cls, value: str) -> str:
+        """Validate that the time is in HH:MM format."""
+        if not re.match(r"^\d{2}:\d{2}$", value):
+            raise ValueError(f"Invalid time format: {value}. Expected HH:MM.")
+
+        hour, minute = map(int, value.split(":"))
+        if not (0 <= hour < 24) or not (0 <= minute < 60):
+            raise ValueError(f"Invalid time: {value}. Hour must be 0-23 and minute 0-59.")
+
+        return value
+
+    @model_validator(mode="after")
+    def validate_date(self) -> WeddingDate:
+        """Validate that the date is a valid calendar date."""
+        try:
+            datetime(self.year, self.month, self.day, tzinfo=UTC)
+        except ValueError as e:
+            raise ValueError(f"Invalid wedding date: {e}")
+
+        return self
+
+    @computed_field
+    def weekday(self) -> int | None:
+        """Return the weekday of the wedding date, or None if the date is invalid."""
+        try:
+            return datetime(self.year, self.month, self.day, tzinfo=UTC).weekday()
+        except ValueError:
+            return None
+
+
 class Config(BaseModel):
     """Runtime configuration read from the environment.
 
@@ -123,6 +172,8 @@ class Config(BaseModel):
         wedding_couple_contact (ContactInfo): Contact information for the wedding couple.
         toast_master_contact (list[ContactInfo]): Contact information for the toast
             master(s). Defaults to an empty list.
+        date (WeddingDate | None): Information about the wedding date and time. Defaults
+            to None if not provided.
         venue (WeddingVenue | None): Information about the wedding venue. Defaults to
             None if not provided.
         faq (list[FaqEntry]): Question-and-answer pairs rendered as the home page's
@@ -144,6 +195,7 @@ class Config(BaseModel):
     wedding_couple_contact: ContactInfo
     toast_master_contact: list[ContactInfo] = []
 
+    date: WeddingDate | None = None
     venue: WeddingVenue | None = None
     faq: list[FaqEntry] = []
 
