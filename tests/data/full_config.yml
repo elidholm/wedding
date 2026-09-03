@@ -20,3 +20,8 @@ venue:
     name: The Wedding Venue
     address: 123 Wedding St
     city: Wedding City
+faq:
+  - question: Test question one?
+    answer: Test answer one.
+  - question: Test question two?
+    answer: Test answer two.

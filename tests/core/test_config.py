@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.config import Config, ContactInfo, WeddingVenue
+from core.config import Config, ContactInfo, FaqEntry, WeddingVenue
 
 
 class TestConfigClassLoad(unittest.TestCase):
@@ -41,6 +41,13 @@ class TestConfigClassLoad(unittest.TestCase):
                     address="123 Wedding St",
                     city="Wedding City",
                 ),
+            ),
+            (
+                "faq",
+                [
+                    FaqEntry(question="Test question one?", answer="Test answer one."),
+                    FaqEntry(question="Test question two?", answer="Test answer two."),
+                ],
             ),
         ]
         for field_name, expected_value in test_fields:
@@ -78,6 +85,13 @@ class TestConfigClassLoad(unittest.TestCase):
                     address="123 Wedding St",
                     city="Wedding City",
                 ),
+            ),
+            (
+                "faq",
+                [
+                    FaqEntry(question="Test question one?", answer="Test answer one."),
+                    FaqEntry(question="Test question two?", answer="Test answer two."),
+                ],
             ),
         ]
         for field_name, expected_value in test_fields:
@@ -119,6 +133,7 @@ class TestConfigClassLoad(unittest.TestCase):
             ("wedding_couple_contact", ContactInfo(email="test@email.com", phone="(+46)70-123 45 67")),
             ("toast_master_contact", []),  # Default value
             ("venue", None),  # Default value
+            ("faq", []),  # Default value
         ]
         for field_name, expected_value in test_fields:
             with self.subTest(field=field_name):
@@ -240,6 +255,21 @@ class TestWeddingVenue(unittest.TestCase):
         self.assertEqual(venue.name, self.name)
         self.assertEqual(venue.address, self.address)
         self.assertIsNone(venue.city)
+
+
+class TestFaqEntry(unittest.TestCase):
+    """Test cases for the FaqEntry class."""
+
+    def setUp(self):
+        self.question = "What is the dress code?"
+        self.answer = "Formal attire is preferred."
+
+    def test_valid_faq_entry(self):
+        """Test that a valid FaqEntry instance is created correctly."""
+        faq_entry = FaqEntry(question=self.question, answer=self.answer)
+
+        self.assertEqual(faq_entry.question, self.question)
+        self.assertEqual(faq_entry.answer, self.answer)
 
 
 if __name__ == "__main__":
