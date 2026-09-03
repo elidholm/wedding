@@ -37,42 +37,40 @@ class TestAdminPages(unittest.TestCase):
         response = self.client.get("/admin/login")
 
         self.assertEqual(response.status_code, 200)
+        self.assertIn(b"/api/v1/auth/login", response.data)
 
-    def test_login_with_wrong_password_fails(self):
-        """Test that POSTing an incorrect password re-renders the login form with an error."""
+    def test_login_page_does_not_handle_authentication_posts(self):
+        """Test that POST /admin/login is no longer the authentication endpoint."""
         response = self.client.post("/admin/login", data={"password": "wrong"})
 
+        self.assertEqual(response.status_code, 405)
+
+    def test_api_login_with_correct_password_authenticates_admin_home(self):
+        """Test that the API login endpoint authenticates access to /admin/."""
+        response = self.client.post("/api/v1/auth/login", json={"password": "correct-horse-battery-staple"})
+
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Incorrect password", response.data)
-
-        with self.client.session_transaction() as session:
-            self.assertNotIn("is_admin", session)
-
-    def test_login_with_correct_password_redirects_to_admin_home(self):
-        """Test that POSTing the correct password logs the admin in and redirects to /admin/."""
-        response = self.client.post("/admin/login", data={"password": "correct-horse-battery-staple"})
-
-        self.assertEqual(response.status_code, 302)
-        self.assertIn("/admin", response.location)
 
         with self.client.session_transaction() as session:
             self.assertTrue(session.get("is_admin"))
 
     def test_admin_home_renders_when_authenticated(self):
         """Test that GET /admin/ renders the dummy admin page once logged in."""
-        self.client.post("/admin/login", data={"password": "correct-horse-battery-staple"})
+        with self.client.session_transaction() as session:
+            session["is_admin"] = True
 
         response = self.client.get("/admin/")
 
         self.assertEqual(response.status_code, 200)
+        self.assertIn(b"/api/v1/auth/logout", response.data)
 
-    def test_logout_clears_session_and_relocks_admin_home(self):
-        """Test that GET /admin/logout logs the admin out, re-locking /admin/."""
-        self.client.post("/admin/login", data={"password": "correct-horse-battery-staple"})
+    def test_api_logout_clears_session_and_relocks_admin_home(self):
+        """Test that the API logout endpoint clears the admin session."""
+        with self.client.session_transaction() as session:
+            session["is_admin"] = True
 
-        logout_response = self.client.get("/admin/logout")
-        self.assertEqual(logout_response.status_code, 302)
-        self.assertIn("/admin/login", logout_response.location)
+        logout_response = self.client.post("/api/v1/auth/logout", json={})
+        self.assertEqual(logout_response.status_code, 200)
 
         home_response = self.client.get("/admin/")
         self.assertEqual(home_response.status_code, 302)

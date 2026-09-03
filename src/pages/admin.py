@@ -46,49 +46,19 @@ def login_required(view: Callable[..., str | Response]) -> Callable[..., str | R
     return wrapped_view
 
 
-@bp.route("/login", methods=["GET", "POST"])
-def login() -> str | Response:
-    """Render the admin login form, or handle its password submission.
+@bp.get("/login")
+def login() -> str:
+    """Render the admin login form.
 
-    On a `POST` with the correct password (as configured via the
-    `ADMIN_PASSWORD` environment variable), marks the session as an
-    authenticated admin session and redirects to the admin home page.
-
-    On an incorrect password, re-renders the form with an error message.
-
-    Returns:
-        str | Response: The rendered HTML for the login page, or a
-        redirect response to the admin area.
+    Authentication is handled by the JSON API in ``api.v1.auth``.
     """
     config = current_app.config["CONFIG"]
-    error = None
-
-    if request.method == "POST":
-        submitted_password = request.form.get("password", "")
-
-        if config.admin_password and submitted_password == config.admin_password:
-            session["is_admin"] = True
-            return redirect(url_for("admin.admin_home"))
-
-        error = "Incorrect password."
 
     return render_template(
         "admin_login.html",
         config=config,
         current_year=datetime.now(tz=UTC).year,
-        error=error,
     )
-
-
-@bp.route("/logout")
-def logout() -> Response:
-    """Log the current admin out by clearing their session, then redirect to login.
-
-    Returns:
-        Response: A redirect response to the admin login page.
-    """
-    session.pop("is_admin", None)
-    return redirect(url_for("admin.login"))
 
 
 @bp.route("/")

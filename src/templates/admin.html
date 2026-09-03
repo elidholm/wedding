@@ -6,5 +6,37 @@
 
 {% block content %}
     <p>Du har hittat rätt! Detta är administrationssidan.</p>
-    <p><a href="{{ url_for('admin.logout') }}">Logga ut</a></p>
+    <div id="logout-error" class="alert alert-danger d-none" role="alert"></div>
+    <form id="admin-logout-form" method="post" action="{{ url_for('auth.logout') }}">
+        <button type="submit" class="btn btn-link p-0">Logga ut</button>
+    </form>
+    <script>
+        const logoutForm = document.getElementById("admin-logout-form");
+        const logoutError = document.getElementById("logout-error");
+
+        logoutForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            logoutError.classList.add("d-none");
+
+            try {
+                const response = await fetch("{{ url_for('auth.logout') }}", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: "{}",
+                });
+                const result = await response.json();
+
+                if (response.ok && result.code === "logout_successful") {
+                    window.location.assign("{{ url_for('admin.login') }}");
+                    return;
+                }
+
+                logoutError.textContent = result.message || "Logout failed.";
+                logoutError.classList.remove("d-none");
+            } catch {
+                logoutError.textContent = "Logout failed.";
+                logoutError.classList.remove("d-none");
+            }
+        });
+    </script>
 {% endblock %}
