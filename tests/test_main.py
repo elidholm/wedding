@@ -3,6 +3,7 @@
 import unittest
 
 from api.extensions import limiter
+from core.config import FaqEntry
 from main import app
 
 
@@ -84,6 +85,16 @@ class TestHomePage(unittest.TestCase):
     def setUp(self):
         """Build a Flask app and test client for each test."""
         self.client = app.test_client()
+        self.config = app.config["CONFIG"]
+        self._original_faq = self.config.faq
+        self.config.faq = [
+            FaqEntry(question="Test question one?", answer="Test answer one."),
+            FaqEntry(question="Test question two?", answer="Test answer two."),
+        ]
+
+    def tearDown(self):
+        """Restore the original FAQ configuration."""
+        self.config.faq = self._original_faq
 
     def test_home_page_renders_successfully(self):
         """Test that GET / renders the home page successfully."""
@@ -96,6 +107,33 @@ class TestHomePage(unittest.TestCase):
         response = self.client.get("/home")
 
         self.assertEqual(response.status_code, 200)
+
+    def test_home_page_renders_configured_faq_entries(self):
+        """Test that every configured FAQ question and answer is rendered on the home page."""
+        body = self.client.get("/").get_data(as_text=True)
+
+        self.assertIn("Vanliga frågor", body)
+        for entry in self.config.faq:
+            with self.subTest(question=entry.question):
+                self.assertIn(entry.question, body)
+                self.assertIn(entry.answer, body)
+
+    def test_home_page_faq_uses_bootstrap_5_collapse_attributes(self):
+        """Test that the FAQ accordion uses Bootstrap 5 data attributes so the toggle works."""
+        body = self.client.get("/").get_data(as_text=True)
+
+        self.assertIn('data-bs-toggle="collapse"', body)
+        self.assertIn('data-bs-target="#faq-collapse-1"', body)
+        self.assertIn('data-bs-parent="#faqSection"', body)
+
+    def test_home_page_omits_faq_section_when_not_configured(self):
+        """Test that the FAQ section is left out entirely when no entries are configured."""
+        self.config.faq = []
+
+        body = self.client.get("/").get_data(as_text=True)
+
+        self.assertNotIn("Vanliga frågor", body)
+        self.assertNotIn("faqSection", body)
 
     def test_unsupported_method_on_a_non_api_route_returns_html_405(self):
         """Test that a 405 outside /api/ falls back to Flask's default HTML error page."""
