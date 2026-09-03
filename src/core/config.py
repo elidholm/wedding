@@ -74,6 +74,18 @@ class ContactInfo(BaseModel):
         return value
 
 
+class FaqEntry(BaseModel):
+    """A single question-and-answer pair shown in the FAQ section.
+
+    Attributes:
+        question (str): The question as shown on the accordion header.
+        answer (str): The answer revealed when the entry is expanded.
+    """
+
+    question: str
+    answer: str
+
+
 class WeddingVenue(BaseModel):
     """Information about the wedding venue.
 
@@ -113,6 +125,9 @@ class Config(BaseModel):
             master(s). Defaults to an empty list.
         venue (WeddingVenue | None): Information about the wedding venue. Defaults to
             None if not provided.
+        faq (list[FaqEntry]): Question-and-answer pairs rendered as the home page's
+            FAQ accordion. Defaults to an empty list, in which case the FAQ section
+            is omitted entirely.
     """
 
     app_name: str = "Flask App"
@@ -130,6 +145,7 @@ class Config(BaseModel):
     toast_master_contact: list[ContactInfo] = []
 
     venue: WeddingVenue | None = None
+    faq: list[FaqEntry] = []
 
     @staticmethod
     def load(config_file: str | Path) -> Config:
