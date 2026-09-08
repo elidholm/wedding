@@ -15,14 +15,14 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "djlint>=1.44.2",
+  "djlint>=1.45.2",
   "isort>=9.0.1",
   "mypy>=2.3.1",
   "pre-commit>=4.6.2",
   "pytest-cov>=7.1.0",
   "pytest-playwright>=0.9.0",
   "pytest>=9.1.1",
-  "ruff>=0.16.5",
+  "ruff>=0.16.6",
   "taplo>=0.9.3",
 ]
 
