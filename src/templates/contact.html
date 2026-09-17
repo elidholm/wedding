@@ -1,12 +1,11 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
+
 {% macro render_contact_info(contact) %}
     <ul class="wed-contact-list">
         <li><i class="fa fa-envelope"></i> <a href="mailto:{{ contact.email }}">{{ contact.email }}</a></li>
         <li><i class="fa fa-phone"></i> <a href="tel:{{ contact.phone | replace(' ', '') }}">{{ contact.phone }}</a></li>
     </ul>
 {% endmacro %}
-
-{% extends "base.html" %}
 
 {% block description %}Contact information.{% endblock %}
 
