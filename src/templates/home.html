@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
 
 {% macro weekday_name(day_number) %}
     {% set weekday_names = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag", "Söndag"] %}
@@ -9,8 +9,6 @@
     {% set month_names = ["Januari", "Februari", "Mars", "April", "Maj", "Juni", "Juli", "Augusti", "September", "Oktober", "November", "December"] %}
     {{ month_names[month_number - 1] }}
 {% endmacro %}
-
-{% extends "base.html" %}
 
 {% block description %}The landing/home page of the website.{% endblock %}
 
