@@ -32,6 +32,7 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     </head>
     <body class="d-flex flex-column min-vh-100">
+        <a class="visually-hidden-focusable wed-skip-link" href="#main-content">Hoppa till innehåll</a>
         <header class="sticky-top">
             <nav class="navbar navbar-expand-lg navbar-dark wed-navbar">
                 <div class="container">
@@ -56,7 +57,9 @@
                                 ('seating.seating', 'seating', 'Bordsplacering'),
                             ] %}
                             {% for endpoint, item_id, label in nav_items %}
-                                {% set is_active = request.endpoint == endpoint %}
+                                {% set is_active = request.endpoint == endpoint
+                                    or (endpoint == 'rsvp.rsvp' and request.endpoint == 'rsvp.rsvp_guest')
+                                    or (endpoint == 'home.home' and request.endpoint == 'home.home') %}
                                 <a class="nav-item nav-link{% if is_active %} active{% endif %}"
                                    id="{{ item_id }}"
                                    href="{{ url_for(endpoint) }}"
@@ -68,7 +71,7 @@
             </nav>
         </header>
 
-        <main class="flex-grow-1">
+        <main class="flex-grow-1" id="main-content" tabindex="-1">
             <div class="container wed-content">
                 {% block page_header %}
                     <h1 class="wed-page-header">{% block header %}{{ config.app_name }} - Default Header{% endblock %}</h1>

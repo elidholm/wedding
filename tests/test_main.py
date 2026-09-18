@@ -147,8 +147,19 @@ class TestRsvpPage(unittest.TestCase):
     """Test cases for the rsvp blueprint's routes."""
 
     def setUp(self):
-        """Build a Flask app and test client for each test."""
+        """Build a Flask app and test client for each test, with a known secret key."""
         self.client = app.test_client()
+        self._original_secret_key = app.config.get("SECRET_KEY")
+        app.config["SECRET_KEY"] = app.config["SECRET_KEY"] or "test-secret-key"
+
+    def tearDown(self):
+        """Restore the original secret key configuration."""
+        app.config["SECRET_KEY"] = self._original_secret_key
+
+    def _authenticate(self, guest_id: str) -> None:
+        """Establish an authenticated guest session for the given guest_id, as the search page would."""
+        with self.client.session_transaction() as sess:
+            sess["rsvp_guest_id"] = guest_id
 
     def test_rsvp_search_page_is_registered_under_rsvp_prefix(self):
         """Test that 'rsvp' page is wired to the rsvp blueprint's search page."""
@@ -159,38 +170,119 @@ class TestRsvpPage(unittest.TestCase):
 
     def test_rsvp_guest_page_is_registered_under_rsvp_prefix(self):
         """Test that GET /rsvp/<int:guest_id> is wired to the rsvp blueprint's guest page."""
-        response = self.client.get("/rsvp/42")
+        self._authenticate("123456")
+
+        response = self.client.get("/rsvp/123456")
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"42", response.data)
+        self.assertIn(b"Alex Andersson", response.data)
 
     def test_post_with_valid_guest_id_redirects_to_guest_page(self):
         """Test that POSTing a valid guest_id redirects to /rsvp/<guest_id>."""
-        response = self.client.post("/rsvp/", data={"guest_id": "42"})
+        response = self.client.post("/rsvp/", data={"guest_id": "123456"})
 
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.location.endswith("/rsvp/42"))
+        self.assertTrue(response.location.endswith("/rsvp/123456"))
 
-    def test_post_with_missing_guest_id_redirects_back_to_search(self):
-        """Test that POSTing without guest_id redirects back to the search page."""
+    def test_post_with_missing_guest_id_shows_inline_error(self):
+        """Test that POSTing without guest_id shows an actionable inline error."""
         response = self.client.post("/rsvp/", data={})
 
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.location.endswith("/rsvp"))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"sexsiffriga ID-numret", response.data)
 
-    def test_post_with_non_numeric_guest_id_redirects_back_to_search(self):
-        """Test that POSTing a non-numeric guest_id redirects back to the search page."""
+    def test_post_with_non_numeric_guest_id_shows_inline_error(self):
+        """Test that POSTing a non-numeric guest_id shows an actionable inline error."""
         response = self.client.post("/rsvp/", data={"guest_id": "not-a-number"})
 
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"sexsiffriga ID-numret", response.data)
+
+    def test_post_with_unknown_guest_id_shows_inline_error(self):
+        """Test that POSTing a well-formed but unknown guest_id shows an actionable inline error."""
+        response = self.client.post("/rsvp/", data={"guest_id": "999999"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Vi hittar ingen inbjudan", response.data)
+
+    def test_get_guest_page_renders_successfully(self):
+        """Test that GET /rsvp/<int:guest_id> renders the guest's RSVP page once authenticated."""
+        self._authenticate("123456")
+
+        response = self.client.get("/rsvp/123456")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Alex Andersson", response.data)
+
+    def test_get_guest_page_without_a_session_redirects_to_search(self):
+        """Test that the guest_id in the URL alone cannot be used to view another guest's page."""
+        response = self.client.get("/rsvp/123456")
+
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.location.endswith("/rsvp"))
 
-    def test_get_guest_page_renders_successfully(self):
-        """Test that GET /rsvp/<int:guest_id> renders the guest's RSVP page."""
-        response = self.client.get("/rsvp/42")
+    def test_get_guest_page_with_a_session_for_a_different_guest_redirects_to_search(self):
+        """Test that a session authenticated for one guest_id cannot view a different guest's page."""
+        self._authenticate("654321")
+
+        response = self.client.get("/rsvp/123456")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.location.endswith("/rsvp"))
+
+    def test_guest_rsvp_can_be_saved(self):
+        """Test that an authenticated guest can submit an attendance and dietary response with a valid CSRF token."""
+        self._authenticate("123456")
+        with self.client.session_transaction() as sess:
+            csrf_token = sess.setdefault("rsvp_csrf_token", "test-csrf-token")
+
+        response = self.client.post(
+            "/rsvp/123456",
+            data={
+                "csrf_token": csrf_token,
+                "attending": "yes",
+                "bringing_plus_one": "no",
+                "dietary_requirements": "Vegetarisk",
+                "housing_needs": "",
+            },
+        )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"42", response.data)
+        self.assertIn(b"Ditt svar", response.data)
+
+    def test_guest_rsvp_post_without_a_session_redirects_to_search(self):
+        """Test that POSTing to a guest_id without an authenticated session does not save anything."""
+        response = self.client.post("/rsvp/123456", data={"attending": "yes"})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.location.endswith("/rsvp"))
+
+    def test_guest_rsvp_post_with_an_invalid_csrf_token_is_rejected(self):
+        """Test that POSTing with a missing or incorrect CSRF token shows an error and does not save."""
+        self._authenticate("123456")
+        with self.client.session_transaction() as sess:
+            sess["rsvp_csrf_token"] = "the-real-token"
+
+        response = self.client.post(
+            "/rsvp/123456",
+            data={
+                "csrf_token": "a-different-token",
+                "attending": "yes",
+                "bringing_plus_one": "no",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Sessionen har g\xc3\xa5tt ut", response.data)
+
+    def test_unknown_guest_id_returns_a_clear_error(self):
+        """Test that an authenticated but nonexistent guest ID returns a clear 404, not another guest's data."""
+        self._authenticate("999999")
+
+        response = self.client.get("/rsvp/999999")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertIn(b"Vi hittar ingen inbjudan", response.data)
 
 
 class TestContactPage(unittest.TestCase):
@@ -206,6 +298,15 @@ class TestContactPage(unittest.TestCase):
             with self.subTest(endpoint=endpoint):
                 response = self.client.get(endpoint)
                 self.assertEqual(response.status_code, 200)
+
+    def test_contact_page_groups_direct_contact_actions(self):
+        """Test that contact details are presented as clearly labelled email and phone links."""
+        body = self.client.get("/contact/").get_data(as_text=True)
+
+        self.assertIn('class="wed-contact-card"', body)
+        self.assertIn("mailto:", body)
+        self.assertIn("tel:", body)
+        self.assertIn("Kontakta oss", body)
 
 
 class TestItineraryPage(unittest.TestCase):

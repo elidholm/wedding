@@ -1,6 +1,65 @@
-{% extends "rsvp.html" %}
+{% extends "base.html" %}
+
+{% block description %}OSA till bröllopet.{% endblock %}
+{% block header %}OSA{% endblock %}
 
 {% block content %}
-    <p>Här kommer ett formulär för den specifika gästen att OSA.</p>
-    <p>Gäst-ID: {{ guest_id }}</p>
+    {% if error %}
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endif %}
+
+    {% if guest %}
+        <p>Hej <strong>{{ guest.name }}</strong>! Fyll i formuläret nedan. Du kan ändra ditt svar senare med samma ID-nummer.</p>
+
+        {% if saved %}
+            <div class="alert alert-success" role="status">
+                Tack! Ditt svar är sparat.
+            </div>
+        {% endif %}
+
+        <form class="wed-form wed-form--wide wed-section" method="post" action="{{ url_for('rsvp.rsvp_guest', guest_id=guest_id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <fieldset>
+                <legend>Kommer du?</legend>
+                <div class="wed-choice-group">
+                    <label class="wed-choice">
+                        <input type="radio" name="attending" value="yes" {% if guest.attending is sameas true %}checked{% endif %} required>
+                        <span>Ja, jag kommer</span>
+                    </label>
+                    <label class="wed-choice">
+                        <input type="radio" name="attending" value="no" {% if guest.attending is sameas false %}checked{% endif %}>
+                        <span>Nej, jag kan tyvärr inte komma</span>
+                    </label>
+                </div>
+            </fieldset>
+
+            {% if guest.plus_one_allowed %}
+                <fieldset>
+                    <legend>Medföljande gäst</legend>
+                    <div class="wed-choice-group">
+                        <label class="wed-choice">
+                            <input type="radio" name="bringing_plus_one" value="yes" {% if guest.plus_one_name %}checked{% endif %}>
+                            <span>Jag tar med en gäst</span>
+                        </label>
+                        <label class="wed-choice">
+                            <input type="radio" name="bringing_plus_one" value="no" {% if not guest.plus_one_name %}checked{% endif %}>
+                            <span>Jag kommer själv</span>
+                        </label>
+                    </div>
+                    <label class="form-label" for="plus_one_name">Namn på medföljande gäst <span class="text-muted">(valfritt)</span></label>
+                    <input class="form-control" type="text" id="plus_one_name" name="plus_one_name" maxlength="120" value="{{ guest.plus_one_name }}">
+                </fieldset>
+            {% endif %}
+
+            <div>
+                <label class="form-label" for="dietary_requirements">Allergier eller specialkost <span class="text-muted">(valfritt)</span></label>
+                <textarea class="form-control" id="dietary_requirements" name="dietary_requirements" maxlength="500" rows="3">{{ guest.dietary_requirements }}</textarea>
+            </div>
+            <div>
+                <label class="form-label" for="housing_needs">Behöver du hjälp med boende? <span class="text-muted">(valfritt)</span></label>
+                <textarea class="form-control" id="housing_needs" name="housing_needs" maxlength="500" rows="3">{{ guest.housing_needs }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Spara mitt svar</button>
+        </form>
+    {% endif %}
 {% endblock %}
