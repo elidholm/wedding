@@ -1,10 +1,25 @@
 {% extends "base.html" %}
 
-{% macro render_contact_info(contact) %}
-    <ul class="wed-contact-list">
-        <li><i class="fa fa-envelope"></i> <a href="mailto:{{ contact.email }}">{{ contact.email }}</a></li>
-        <li><i class="fa fa-phone"></i> <a href="tel:{{ contact.phone | replace(' ', '') }}">{{ contact.phone }}</a></li>
-    </ul>
+{% macro contact_card(contact, heading, detail) %}
+    <article class="wed-contact-card">
+        <div class="wed-contact-card__header">
+            <span class="wed-contact-card__icon" aria-hidden="true"><i class="fa fa-user"></i></span>
+            <div>
+                <h2>{{ heading }}</h2>
+                {% if detail %}<p>{{ detail }}</p>{% endif %}
+            </div>
+        </div>
+        <div class="wed-contact-actions">
+            <a class="wed-contact-action" href="mailto:{{ contact.email }}">
+                <i class="fa fa-envelope" aria-hidden="true"></i>
+                <span><small>E-post</small>{{ contact.email }}</span>
+            </a>
+            <a class="wed-contact-action" href="tel:{{ contact.phone | replace(' ', '') }}">
+                <i class="fa fa-phone" aria-hidden="true"></i>
+                <span><small>Ring eller sms:a</small>{{ contact.phone }}</span>
+            </a>
+        </div>
+    </article>
 {% endmacro %}
 
 {% block description %}Contact information.{% endblock %}
@@ -12,19 +27,32 @@
 {% block header %}{{ config.app_name }} - Kontakta oss{% endblock %}
 
 {% block content %}
-    <p>Om du har några frågor eller funderingar kring bröllopet, tveka inte att kontakta oss!</p>
-    {{ render_contact_info(config.wedding_couple_contact) }}
+    <section class="wed-contact-intro" aria-labelledby="contact-intro-heading">
+        <p class="wed-contact-intro__eyebrow">Vi hjälper gärna till</p>
+        <h2 id="contact-intro-heading">Har du en fråga?</h2>
+        <p>Hör av dig när som helst om du undrar något inför bröllopet. Välj det sätt som passar dig bäst.</p>
+    </section>
+
+    <section class="wed-contact-section" aria-labelledby="couple-contact-heading">
+        <div class="wed-contact-section__heading">
+            <p class="wed-contact-section__eyebrow">Allmänna frågor</p>
+            <h2 id="couple-contact-heading">Kontakta oss</h2>
+        </div>
+        {{ contact_card(config.wedding_couple_contact, config.app_name, "För frågor om dagen och din inbjudan.") }}
+    </section>
+
     {% if config.toast_master_contact | length >= 1 %}
-        <section class="wed-section">
-            <p>För frågor gällande middagen, var vänlig kontakta kvällens toastmaster{% if config.toast_master_contact | length >= 2 %}s{% endif %}:</p>
-            <ul class="wed-contact-list">
+        <section class="wed-contact-section" aria-labelledby="toastmaster-contact-heading">
+            <div class="wed-contact-section__heading">
+                <p class="wed-contact-section__eyebrow">Middag och tal</p>
+                <h2 id="toastmaster-contact-heading">Kvällens toastmaster{% if config.toast_master_contact | length >= 2 %}s{% endif %}</h2>
+                <p>För frågor om middagen eller om du vill hålla tal, kontakta gärna toastmastern.</p>
+            </div>
+            <div class="wed-contact-grid">
                 {% for contact in config.toast_master_contact %}
-                    <li>
-                        <i class="fa fa-user"></i> {{ contact.name }}
-                        {{ render_contact_info(contact) }}
-                    </li>
+                    {{ contact_card(contact, contact.name, "Toastmaster") }}
                 {% endfor %}
-            </ul>
+            </div>
         </section>
     {% endif %}
 {% endblock %}

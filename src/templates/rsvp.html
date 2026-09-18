@@ -6,22 +6,30 @@
 
 {% block content %}
     <p>Här kan du OSA till vårt bröllop och meddela oss om eventuella allergier eller specialkost.</p>
-    <p>För att OSA eller ändra dina tidigare svar, vänligen ange ditt sexsiffriga personliga ID-nummer som finns på din inbjudan.</p>
+    <p>För att OSA eller ändra dina tidigare svar, ange det sexsiffriga personliga ID-numret på din inbjudan.</p>
 
-    <form class="wed-form wed-section" method="post" action="{{ url_for('rsvp.rsvp') }}">
+    {% if error %}
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <form class="wed-form wed-section" method="post" action="{{ url_for('rsvp.rsvp') }}" novalidate>
         <div class="mb-3">
-            <label class="form-label" for="guest_id">Personligt ID-nummer:</label>
-            <input type="number"
+            <label class="form-label" for="guest_id">Personligt ID-nummer</label>
+            <input type="text"
                    class="form-control"
                    id="guest_id"
                    name="guest_id"
-                   placeholder="XXXXXX"
+                   value="{{ guest_id }}"
+                   placeholder="123456"
                    inputmode="numeric"
-                   autocomplete="off"
-                   min="100000"
-                   max="999999"
+                   autocomplete="one-time-code"
+                   pattern="[0-9]{6}"
+                   maxlength="6"
+                   aria-describedby="guest-id-help"
+                   {% if error %}aria-invalid="true"{% endif %}
                    required>
+            <div id="guest-id-help" class="form-text">Hittar du inte numret? Kontakta oss så hjälper vi dig.</div>
         </div>
-        <button type="submit" class="btn btn-primary">OSA</button>
+        <button type="submit" class="btn btn-primary">Fortsätt</button>
     </form>
 {% endblock %}

@@ -204,7 +204,7 @@ class TestResponsiveLayout(unittest.TestCase):
             context.close()
 
     def test_map_embed_fits_within_content_column(self):
-        """Test that the map embed never exceeds the width of its containing column."""
+        """Test that the automatically loaded map never exceeds its content column."""
         context = self.browser.new_context(viewport={"width": 320, "height": 900})
         page = context.new_page()
         try:
@@ -213,6 +213,7 @@ class TestResponsiveLayout(unittest.TestCase):
 
             self.assertIsNotNone(map_box, "The map embed did not render")
             self.assertLessEqual(map_box["width"], 320)
+            self.assertEqual(page.locator(".wed-map iframe").count(), 1)
         finally:
             context.close()
 

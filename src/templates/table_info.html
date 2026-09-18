@@ -5,10 +5,6 @@
 {% block header %}{{ config.app_name }} - Varför heter detta bordet {{ table_name }}?{% endblock %}
 
 {% block content %}
-    <p>Det finns många fina anledningar till att detta bordet heter just {{ table_name }}. Här kommer en handfull:</p>
-    <ul>
-        {% for reason in reasons %}
-        <li>{{ reason }}</li>
-        {% endfor %}
-    </ul>
+    <p class="wed-status">Informationen om bordet <strong>{{ table_name }}</strong> publiceras när bordsplaceringen är färdig.</p>
+    <p>Återkom gärna senare eller kontakta oss om du har frågor om din plats.</p>
 {% endblock %}
