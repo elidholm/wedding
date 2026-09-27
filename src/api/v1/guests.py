@@ -130,11 +130,13 @@ def _parse_body(model: type[GuestCreate] | type[GuestUpdate], payload: object) -
         not valid JSON, or failed validation.
     """
     if payload is None:
+        _log.error("Request body is missing or not valid JSON.")
         return _error("Request body must be valid JSON.", 400)
 
     try:
         return model.model_validate(payload)
     except ValidationError as exc:
+        _log.error("Request body failed validation: %s", exc.errors(include_url=False, include_context=False))
         return _error(
             "Invalid request data.",
             400,
@@ -157,11 +159,11 @@ def list_guests() -> Response:
     service = get_guest_service()
     try:
         guests = service.list_guests()
+        _log.debug("Listed %d guests.", len(guests))
     except SQLAlchemyError:
-        _log.exception("Failed to list guests.")
+        _log.error("Failed to list guests.")
         return _error("Failed to list guests.", 500)
 
-    _log.debug("Listed %d guests.", len(guests))
     return _json(
         [GuestRead.model_validate(guest).model_dump(mode="json") for guest in guests],
         200,
@@ -189,8 +191,9 @@ def create_guest() -> Response:
     service = get_guest_service()
     try:
         created_guest = service.create_guest(**guest_data.model_dump(exclude_unset=True))
+        _log.debug("Created guest %d.", created_guest.id)
     except SQLAlchemyError:
-        _log.exception("Failed to create guest.")
+        _log.error("Failed to create guest.")
         return _error("Failed to create guest.", 500)
 
     response = _json(GuestRead.model_validate(created_guest).model_dump(mode="json"), 201)
@@ -216,10 +219,13 @@ def get_guest(guest_id: int) -> Response:
     service = get_guest_service()
     try:
         guest = service.get_guest(guest_id)
+        _log.debug("Retrieved guest %s.", guest_id)
     except SQLAlchemyError:
-        _log.exception("Failed to get guest %s.", guest_id)
+        _log.error("Failed to get guest %s.", guest_id)
         return _error("Failed to get guest.", 500)
+
     if guest is None:
+        _log.error("Guest %s not found.", guest_id)
         return _error("Guest not found.", 404)
     return _json(GuestRead.model_validate(guest).model_dump(mode="json"), 200)
 
@@ -247,11 +253,13 @@ def update_guest(guest_id: int) -> Response:
     service = get_guest_service()
     try:
         updated_guest = service.update_guest(guest_id, **guest_data.model_dump(exclude_unset=True))
+        _log.debug("Updated guest %d.", guest_id)
     except SQLAlchemyError:
-        _log.exception("Failed to update guest %s.", guest_id)
+        _log.error("Failed to update guest %d.", guest_id)
         return _error("Failed to update guest.", 500)
 
     if updated_guest is None:
+        _log.error("Guest %d not found.", guest_id)
         return _error("Guest not found.", 404)
     return _json(GuestRead.model_validate(updated_guest).model_dump(mode="json"), 200)
 
@@ -274,10 +282,12 @@ def delete_guest(guest_id: int) -> Response:
     service = get_guest_service()
     try:
         deleted = service.delete_guest(guest_id)
+        _log.debug("Deleted guest %d.", guest_id)
     except SQLAlchemyError:
-        _log.exception("Failed to delete guest %s.", guest_id)
+        _log.error("Failed to delete guest %d.", guest_id)
         return _error("Failed to delete guest.", 500)
 
     if not deleted:
+        _log.error("Guest %d not found.", guest_id)
         return _error("Guest not found.", 404)
     return Response(status=204, mimetype="application/json")
