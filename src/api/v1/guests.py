@@ -6,6 +6,12 @@ This module defines the API resource for managing guest records. It
 provides endpoints for listing, creating, retrieving, updating, and
 deleting guests.
 
+Guest records are personal data (names, emails, allergies, food
+preferences), so *every* endpoint in this resource requires an
+authenticated admin session - the same ``is_admin`` session flag set by
+``api.v1.auth``. Unauthenticated requests are rejected with a 401 before
+the view ever runs.
+
 Every response - success or error - is JSON, including validation
 failures (400), not-found (404), and method-not-allowed (405) errors, so
 API consumers never have to deal with Flask's default HTML error pages.
@@ -13,7 +19,7 @@ API consumers never have to deal with Flask's default HTML error pages.
 
 import logging
 
-from flask import Blueprint, Response, g, jsonify, request, url_for
+from flask import Blueprint, Response, g, jsonify, request, session, url_for
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -97,6 +103,20 @@ def _error(message: str, status: int, **extra: object) -> Response:
     return _json({"error": message, **extra}, status)
 
 
+@bp.before_request
+def _require_admin() -> Response | None:
+    """Reject any request to this resource that lacks an admin session.
+
+    Returns:
+        Response | None: A 401 JSON error response if the current session
+        is not authenticated as an admin, otherwise None to let the
+        request proceed to its view.
+    """
+    if not session.get("is_admin"):
+        return _error("Admin authentication required.", 401)
+    return None
+
+
 def _parse_body(model: type[GuestCreate] | type[GuestUpdate], payload: object) -> GuestCreate | GuestUpdate | Response:
     """Validate a request's JSON body against a guest pydantic model.
 
@@ -127,9 +147,12 @@ def _parse_body(model: type[GuestCreate] | type[GuestUpdate], payload: object) -
 def list_guests() -> Response:
     """List all guests.
 
+    Requires an authenticated admin session.
+
     Returns:
-        Response: 200 with a JSON array of guest records; 500 if the
-        guests could not be retrieved.
+        Response: 200 with a JSON array of guest records; 401 if the
+        session is not an authenticated admin; 500 if the guests could
+        not be retrieved.
     """
     service = get_guest_service()
     try:
@@ -137,6 +160,8 @@ def list_guests() -> Response:
     except SQLAlchemyError:
         _log.exception("Failed to list guests.")
         return _error("Failed to list guests.", 500)
+
+    _log.debug("Listed %d guests.", len(guests))
     return _json(
         [GuestRead.model_validate(guest).model_dump(mode="json") for guest in guests],
         200,
@@ -148,11 +173,14 @@ def list_guests() -> Response:
 def create_guest() -> Response:
     """Create a new guest record.
 
+    Requires an authenticated admin session.
+
     Returns:
         Response: 201 with the created guest record (and a ``Location``
         header pointing at it) on success; 400 if the request body is
-        missing, malformed, or fails validation; 500 if the record could
-        not be persisted.
+        missing, malformed, or fails validation; 401 if the session is
+        not an authenticated admin; 500 if the record could not be
+        persisted.
     """
     guest_data = _parse_body(GuestCreate, request.get_json(silent=True))
     if isinstance(guest_data, Response):
@@ -175,12 +203,15 @@ def create_guest() -> Response:
 def get_guest(guest_id: int) -> Response:
     """Get a single guest by ID.
 
+    Requires an authenticated admin session.
+
     Args:
         guest_id (int): The guest's unique personal ID number.
 
     Returns:
         Response: 200 with the guest record, or 404 if no guest with that ID
-        exists; 500 if the guest could not be retrieved.
+        exists; 401 if the session is not an authenticated admin; 500 if
+        the guest could not be retrieved.
     """
     service = get_guest_service()
     try:
@@ -198,13 +229,16 @@ def get_guest(guest_id: int) -> Response:
 def update_guest(guest_id: int) -> Response:
     """Update an existing guest record.
 
+    Requires an authenticated admin session.
+
     Args:
         guest_id (int): The unique personal ID number of the guest to update.
 
     Returns:
         Response: 200 with the updated guest record; 400 if the request
-        body is missing, malformed, or fails validation; 404 if no guest
-        with that ID exists; 500 if the update could not be persisted.
+        body is missing, malformed, or fails validation; 401 if the
+        session is not an authenticated admin; 404 if no guest with that
+        ID exists; 500 if the update could not be persisted.
     """
     guest_data = _parse_body(GuestUpdate, request.get_json(silent=True))
     if isinstance(guest_data, Response):
@@ -227,12 +261,15 @@ def update_guest(guest_id: int) -> Response:
 def delete_guest(guest_id: int) -> Response:
     """Delete a guest record.
 
+    Requires an authenticated admin session.
+
     Args:
         guest_id (int): The unique personal ID number of the guest to delete.
 
     Returns:
-        Response: 204 No Content on success; 404 if no guest with that ID
-        exists; 500 if the deletion could not be persisted.
+        Response: 204 No Content on success; 401 if the session is not an
+        authenticated admin; 404 if no guest with that ID exists; 500 if
+        the deletion could not be persisted.
     """
     service = get_guest_service()
     try:

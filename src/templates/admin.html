@@ -1,42 +1,35 @@
 {% extends "base.html" %}
+{% from "admin/_macros.html" import admin_section %}
 
 {% block description %}Admin area.{% endblock %}
 
 {% block header %}{{ config.app_name }} - Admin{% endblock %}
 
+{#
+    Sections and their actions are defined in pages/admin/sections.py -
+    add new admin tools there, not here.
+#}
 {% block content %}
-    <p>Du har hittat rätt! Detta är administrationssidan.</p>
-    <div id="logout-error" class="alert alert-danger d-none" role="alert"></div>
-    <form id="admin-logout-form" method="post" action="{{ url_for('auth.logout') }}">
-        <button type="submit" class="btn btn-link p-0">Logga ut</button>
-    </form>
-    <script>
-        const logoutForm = document.getElementById("admin-logout-form");
-        const logoutError = document.getElementById("logout-error");
+    <div class="wed-admin-toolbar">
+        <p class="wed-admin-intro">
+            Här hanterar du gästlistan. Fler verktyg - inbjudningar och export till Excel - kommer senare.
+        </p>
+        <form id="admin-logout-form"
+              class="wed-admin-logout"
+              method="post"
+              action="{{ url_for('auth.logout') }}">
+            <button type="submit" class="btn wed-admin-action wed-admin-action-quiet">Logga ut</button>
+        </form>
+    </div>
 
-        logoutForm.addEventListener("submit", async (event) => {
-            event.preventDefault();
-            logoutError.classList.add("d-none");
+    <p id="logout-error" class="wed-admin-status wed-admin-status-error d-none" role="alert"></p>
 
-            try {
-                const response = await fetch("{{ url_for('auth.logout') }}", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: "{}",
-                });
-                const result = await response.json();
+    {% for section in sections %}{{ admin_section(section, url_templates) }}{% endfor %}
+{% endblock %}
 
-                if (response.ok && result.code === "logout_successful") {
-                    window.location.assign("{{ url_for('admin.login') }}");
-                    return;
-                }
-
-                logoutError.textContent = result.message || "Logout failed.";
-                logoutError.classList.remove("d-none");
-            } catch {
-                logoutError.textContent = "Logout failed.";
-                logoutError.classList.remove("d-none");
-            }
-        });
-    </script>
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/admin.js') }}"
+            data-login-url="{{ url_for('admin.login') }}"
+            data-logout-url="{{ url_for('auth.logout') }}"
+            defer></script>
 {% endblock %}

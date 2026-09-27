@@ -1,0 +1,105 @@
+{#
+    Admin page building blocks, rendered from pages.admin.sections.SECTIONS.
+    These are generic: adding a section or action never requires editing
+    this file - see pages/admin/sections.py.
+#}
+
+{% macro admin_field(dom_id, field) %}
+    {% set help_id = dom_id ~ "-help" %}
+    {% if field.type == "bool" %}
+        <div class="form-check wed-admin-field">
+            <input class="form-check-input"
+                   type="checkbox"
+                   id="{{ dom_id }}"
+                   name="{{ field.name }}"
+                   data-location="{{ field.location }}"
+                   data-type="bool"
+                   {% if field.help %}aria-describedby="{{ help_id }}"{% endif %}>
+            <label class="form-check-label" for="{{ dom_id }}">{{ field.label }}</label>
+            {% if field.help %}<p class="wed-admin-field-help" id="{{ help_id }}">{{ field.help }}</p>{% endif %}
+        </div>
+    {% else %}
+        <div class="wed-admin-field">
+            <label class="form-label" for="{{ dom_id }}">
+                {{ field.label }}
+                {% if field.required %}<span class="wed-admin-field-required" aria-hidden="true">*</span>{% endif %}
+            </label>
+            {% if field.type == "textarea" %}
+                <textarea class="form-control"
+                          id="{{ dom_id }}"
+                          name="{{ field.name }}"
+                          rows="3"
+                          data-location="{{ field.location }}"
+                          data-type="textarea"
+                          {% if field.required %}required{% endif %}
+                          {% if field.help %}aria-describedby="{{ help_id }}"{% endif %}></textarea>
+            {% elif field.type == "tri_bool" %}
+                <select class="form-select"
+                        id="{{ dom_id }}"
+                        name="{{ field.name }}"
+                        data-location="{{ field.location }}"
+                        data-type="tri_bool"
+                        {% if field.required %}required{% endif %}
+                        {% if field.help %}aria-describedby="{{ help_id }}"{% endif %}>
+                    <option value="">Ej angivet</option>
+                    <option value="true">Ja</option>
+                    <option value="false">Nej</option>
+                </select>
+            {% else %}
+                <input class="form-control"
+                       id="{{ dom_id }}"
+                       name="{{ field.name }}"
+                       data-location="{{ field.location }}"
+                       data-type="{{ field.type }}"
+                       {% if field.type == "integer" %}
+                           type="number" inputmode="numeric" min="1" step="1"
+                       {% elif field.type == "email" %}
+                           type="email" autocomplete="off"
+                       {% else %}
+                           type="text"
+                       {% endif %}
+                       {% if field.required %}required{% endif %}
+                       {% if field.help %}aria-describedby="{{ help_id }}"{% endif %}>
+            {% endif %}
+            {% if field.help %}<p class="wed-admin-field-help" id="{{ help_id }}">{{ field.help }}</p>{% endif %}
+        </div>
+    {% endif %}
+{% endmacro %}
+
+{% macro admin_action(section, action, url_template) %}
+    {% set dom_id = "admin-" ~ section.id ~ "-" ~ action.id %}
+    <form class="wed-admin-action-card"
+          id="{{ dom_id }}"
+          aria-labelledby="{{ dom_id }}-title"
+          data-admin-action
+          data-method="{{ action.method }}"
+          data-url-template="{{ url_template }}"
+          {% if action.destructive %}data-destructive{% endif %}>
+        <h3 class="wed-admin-action-title" id="{{ dom_id }}-title">{{ action.title }}</h3>
+        <p class="wed-admin-action-description">{{ action.description }}</p>
+        {% if action.fields %}
+            <div class="wed-admin-fields">
+                {% for field in action.fields %}{{ admin_field(dom_id ~ "-" ~ field.name, field) }}{% endfor %}
+            </div>
+        {% endif %}
+        <button type="submit"
+                class="btn wed-admin-action{% if action.destructive %} wed-admin-action-destructive{% endif %}"
+                data-label="{{ action.submit_label }}">{{ action.submit_label }}</button>
+        <p class="wed-admin-status d-none" role="status" aria-live="polite" data-admin-status></p>
+        <pre class="wed-admin-output d-none" tabindex="0" data-admin-output></pre>
+    </form>
+{% endmacro %}
+
+{% macro admin_section(section, url_templates) %}
+    <section class="wed-admin-section"
+             id="admin-{{ section.id }}"
+             aria-labelledby="admin-{{ section.id }}-title">
+        <h2 class="wed-admin-section-title" id="admin-{{ section.id }}-title">{{ section.title }}</h2>
+        <p class="wed-admin-section-description">{{ section.description }}</p>
+        <div class="wed-admin-actions">
+            {% for action in section.actions %}
+                {{ admin_action(section, action, url_templates[(section.id, action.id)]) }}
+            {% endfor %}
+        </div>
+    </section>
+{% endmacro %}

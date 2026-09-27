@@ -1,9 +1,11 @@
 """
-pages.admin - Admin area blueprint (auth scaffold only)
--------------------------------------------------------
+pages.admin.routes - Admin area blueprint
+-----------------------------------------
 
 This module wires up a password-protected `/admin` area for the wedding
-couple.
+couple. The landing page is rendered from the declarative registry in
+``pages.admin.sections``; see that module for how to add a new section or
+action.
 
 The area is intentionally not linked from the site's navigation; it is
 only reachable by visiting `/admin` directly.
@@ -23,6 +25,8 @@ from flask import (
     url_for,
 )
 from werkzeug.wrappers import Response
+
+from pages.admin.sections import SECTIONS, resolve_url_template
 
 bp = Blueprint("admin", __name__)
 
@@ -52,11 +56,9 @@ def login() -> str:
 
     Authentication is handled by the JSON API in ``api.v1.auth``.
     """
-    config = current_app.config["CONFIG"]
-
     return render_template(
         "admin_login.html",
-        config=config,
+        config=current_app.config["CONFIG"],
         current_year=datetime.now(tz=UTC).year,
     )
 
@@ -65,13 +67,20 @@ def login() -> str:
 @bp.route("")
 @login_required
 def admin_home() -> str:
-    """Render the admin area's dummy landing page.
+    """Render the admin landing page from the section registry.
 
     Returns:
         str: The rendered HTML for the admin landing page.
     """
+    url_templates = {
+        (section.id, action.id): resolve_url_template(current_app, action)
+        for section in SECTIONS
+        for action in section.actions
+    }
     return render_template(
         "admin.html",
         config=current_app.config["CONFIG"],
         current_year=datetime.now(tz=UTC).year,
+        sections=SECTIONS,
+        url_templates=url_templates,
     )
