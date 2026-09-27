@@ -578,6 +578,296 @@ li {
   }
 }
 
+/* Admin area */
+.wed-admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wed-space-block);
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--wed-space-block);
+}
+
+.wed-admin-intro {
+  flex: 1 1 18rem;
+  margin-bottom: 0;
+  color: var(--wed-muted);
+}
+
+.wed-admin-logout {
+  margin-bottom: 0;
+}
+
+/*
+  Sections are a translucent material layer: content reads through them,
+  a brighter top edge catches the light, and the larger surface carries a
+  stronger blur and deeper shadow than a small chip would.
+*/
+.wed-admin-section {
+  margin-block: var(--wed-space-section);
+  padding: var(--wed-gutter);
+  border: 1px solid var(--wed-border);
+  border-radius: var(--wed-radius);
+  background: rgb(250 247 241 / 72%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 65%),
+    0 0.75rem 2rem rgb(47 58 44 / 8%);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Large type reads too loose by default: tighten tracking and leading. */
+.wed-admin-section-title {
+  margin-bottom: 0.35em;
+  color: var(--wed-sage-dark);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+.wed-admin-section-description {
+  margin-bottom: var(--wed-space-block);
+  color: var(--wed-muted);
+  letter-spacing: 0;
+}
+
+.wed-admin-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wed-space-block);
+}
+
+/*
+  Sub-sections sit on a solid inner surface: stacking a light translucent
+  layer on another would collapse legibility.
+*/
+.wed-admin-action-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: var(--wed-space-block);
+  border: 1px solid var(--wed-border);
+  border-radius: calc(var(--wed-radius) * 0.75);
+  background: var(--wed-offwhite);
+}
+
+.wed-admin-action-title {
+  margin-bottom: 0;
+  color: var(--wed-ink);
+  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.wed-admin-action-description {
+  margin-bottom: 0;
+  color: var(--wed-muted);
+}
+
+.wed-admin-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: 0.75rem 1rem;
+  width: 100%;
+}
+
+/* Align checkboxes with the baseline of neighbouring inputs, not their labels. */
+.wed-admin-field.form-check {
+  align-self: end;
+  margin-bottom: 0.45rem;
+}
+
+.wed-admin-field .form-check-input:checked {
+  border-color: var(--wed-sage-dark);
+  background-color: var(--wed-sage);
+}
+
+.wed-admin-field .form-control:focus,
+.wed-admin-field .form-select:focus,
+.wed-admin-field .form-check-input:focus {
+  border-color: var(--wed-sage);
+  box-shadow: 0 0 0 0.2rem rgb(125 144 117 / 25%);
+}
+
+.wed-admin-field .form-label {
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+}
+
+.wed-admin-field-required {
+  margin-left: 0.15em;
+  color: var(--wed-accent);
+}
+
+.wed-admin-field-help {
+  margin-block: 0.3rem 0;
+  color: var(--wed-muted);
+  font-size: 0.875rem;
+}
+
+.wed-admin-action {
+  --bs-btn-focus-shadow-rgb: 125, 144, 117;
+
+  padding-block: 0.6rem;
+  padding-inline: 1.25rem;
+  border: 1px solid var(--wed-sage-dark);
+  border-radius: var(--wed-radius);
+  background: var(--wed-sage);
+  color: var(--wed-offwhite);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    transform 100ms ease-out,
+    background-color 150ms ease-out;
+}
+
+.wed-admin-action:hover,
+.wed-admin-action:focus-visible {
+  background: var(--wed-sage-dark);
+  color: var(--wed-offwhite);
+}
+
+/* Feedback belongs on the press, not the release. */
+.wed-admin-action:active {
+  transform: scale(0.97);
+  background: var(--wed-sage-dark);
+  color: var(--wed-offwhite);
+}
+
+.wed-admin-action:disabled {
+  transform: none;
+  opacity: 0.6;
+}
+
+.wed-admin-action-quiet {
+  border-color: var(--wed-border);
+  background: transparent;
+  color: var(--wed-sage-dark);
+  font-weight: 400;
+}
+
+.wed-admin-action-quiet:hover,
+.wed-admin-action-quiet:focus-visible,
+.wed-admin-action-quiet:active {
+  background: var(--wed-cream);
+  color: var(--wed-ink);
+}
+
+.wed-admin-action-destructive {
+  border-color: #7a2e2e;
+  background: transparent;
+  color: #7a2e2e;
+}
+
+.wed-admin-action-destructive:hover,
+.wed-admin-action-destructive:focus-visible,
+.wed-admin-action-destructive:active {
+  background: rgb(155 59 59 / 10%);
+  color: #6b2626;
+}
+
+/* Armed: the next press commits. Solid danger fill makes that unmistakable. */
+.wed-admin-action-destructive[data-armed],
+.wed-admin-action-destructive[data-armed]:hover,
+.wed-admin-action-destructive[data-armed]:focus-visible {
+  border-color: #7a2e2e;
+  background: #9b3b3b;
+  color: var(--wed-offwhite);
+}
+
+/*
+  Text over a translucent surface needs more than flat gray: slightly
+  heavier weight and a small tracking bump keep it legible.
+*/
+.wed-admin-status {
+  margin-bottom: 0;
+  color: var(--wed-muted);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.wed-admin-status-busy {
+  color: var(--wed-sage-dark);
+}
+
+.wed-admin-status-error {
+  padding: 0.65rem 0.9rem;
+  border-left: 0.25rem solid #9b3b3b;
+  border-radius: 0.25rem;
+  background: rgb(155 59 59 / 10%);
+  color: #7a2e2e;
+}
+
+.wed-admin-output {
+  width: 100%;
+  max-height: 28rem;
+  margin-bottom: 0;
+  padding: var(--wed-space-block);
+  overflow: auto;
+  border: 1px solid var(--wed-border);
+  border-radius: var(--wed-radius);
+  background: var(--wed-cream);
+  color: var(--wed-ink);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/*
+  The panel materialises rather than fading: blur, scale and opacity move
+  together so it reads as a real surface arriving. Critically damped - no
+  overshoot, because no gesture carried momentum into it.
+*/
+@keyframes wed-admin-materialize {
+  from {
+    transform: scale(0.98);
+    opacity: 0;
+    filter: blur(8px);
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.wed-admin-output-enter {
+  will-change: transform, opacity, filter;
+  animation: wed-admin-materialize 350ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .wed-admin-section {
+    background: var(--wed-cream);
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .wed-admin-section {
+    border: 2px solid var(--wed-ink);
+    background: var(--wed-offwhite);
+    backdrop-filter: none;
+  }
+
+  .wed-admin-output {
+    border: 2px solid var(--wed-ink);
+  }
+
+  .wed-admin-action-card {
+    border: 2px solid var(--wed-ink);
+  }
+
+  .wed-admin-action-destructive {
+    border-width: 2px;
+  }
+
+  .wed-admin-status-error {
+    background: var(--wed-offwhite);
+    color: #6b2626;
+  }
+}
+
 /* Footer */
 .wed-footer {
   gap: 0.5rem;
@@ -604,5 +894,36 @@ li {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/*
+  Reduced motion means a gentler equivalent, not no feedback: keep a short
+  opacity cross-fade so the panel's arrival is still perceivable, but drop
+  the scale and blur that carry the vestibular load.
+*/
+@media (prefers-reduced-motion: reduce) {
+  @keyframes wed-admin-materialize {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  .wed-admin-output-enter {
+    animation-duration: 200ms !important;
+    animation-timing-function: ease !important;
+  }
+
+  .wed-admin-action {
+    transition: none;
+  }
+
+  .wed-admin-action:active {
+    transform: none;
+    background: var(--wed-sage-dark);
   }
 }

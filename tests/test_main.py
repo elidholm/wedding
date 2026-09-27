@@ -64,6 +64,40 @@ class TestAdminPages(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"/api/v1/auth/logout", response.data)
 
+    def test_admin_home_renders_the_guest_list_section(self):
+        """Test that the admin page renders the guest section with its list sub-section."""
+        with self.client.session_transaction() as session:
+            session["is_admin"] = True
+
+        body = self.client.get("/admin/").get_data(as_text=True)
+
+        self.assertIn('id="admin-guests"', body)
+        self.assertIn("Gästlista", body)
+        self.assertIn('id="admin-guests-list"', body)
+        self.assertIn("Lista alla gäster", body)
+
+    def test_admin_home_renders_actions_from_the_registry(self):
+        """Test that each action renders as a data-driven form wired to its endpoint."""
+        with self.client.session_transaction() as session:
+            session["is_admin"] = True
+
+        body = self.client.get("/admin/").get_data(as_text=True)
+
+        self.assertEqual(body.count("data-admin-action"), 1)
+        self.assertIn('data-method="GET"', body)
+        self.assertIn('data-url-template="/api/v1/guests"', body)
+
+    def test_admin_home_loads_the_admin_script(self):
+        """Test that the admin page loads the external admin.js runner with its config."""
+        with self.client.session_transaction() as session:
+            session["is_admin"] = True
+
+        body = self.client.get("/admin/").get_data(as_text=True)
+
+        self.assertIn("/static/js/admin.js", body)
+        self.assertIn('data-login-url="/admin/login"', body)
+        self.assertIn('data-logout-url="/api/v1/auth/logout"', body)
+
     def test_api_logout_clears_session_and_relocks_admin_home(self):
         """Test that the API logout endpoint clears the admin session."""
         with self.client.session_transaction() as session:

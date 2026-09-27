@@ -8,7 +8,7 @@ up to a Flask application, each under its own URL prefix.
 
 from flask import Flask
 
-from pages.admin import bp as admin_bp
+from pages.admin.routes import bp as admin_bp
 from pages.contact import bp as contact_bp
 from pages.home import bp as home_bp
 from pages.itinerary import bp as itinerary_bp

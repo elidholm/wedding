@@ -9,6 +9,7 @@ from api.routes import register as register_api
 from core.config import get_config
 from core.logging import setup_logging
 from db.schemas import Base, engine
+from pages.admin.sections import validate_sections as validate_admin_sections
 from pages.routes import register as register_pages
 
 config = get_config()
@@ -32,6 +33,8 @@ Base.metadata.create_all(bind=engine)
 
 register_pages(app)
 register_api(app)
+# Needs every page and API blueprint registered to resolve action endpoints.
+validate_admin_sections(app)
 
 
 def main() -> None:

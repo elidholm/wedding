@@ -69,8 +69,10 @@ wedding/
 │   │                              #   ...)` singleton directly (no
 │   │                              #   create_app() factory), calls
 │   │                              #   pages.routes.register(app) and
-│   │                              #   api.routes.register(app), defines
-│   │                              #   `main()` which calls `app.run(...)`
+│   │                              #   api.routes.register(app), then
+│   │                              #   validate_admin_sections(app),
+│   │                              #   defines `main()` which calls
+│   │                              #   `app.run(...)`
 │   ├── pages/
 │   │   ├── __init__.py             # intentionally empty (no logic here)
 │   │   ├── routes.py                # register(app): wires every page
@@ -85,8 +87,16 @@ wedding/
 │   │   ├── contact.py                  # `contact` blueprint: "/"
 │   │   ├── itinerary.py                 # `itinerary` blueprint: "/"
 │   │   ├── seating.py                    # `seating` blueprint: "/"
-│   │   └── table_info.py                  # `table_info` blueprint:
-│   │                                       #   "/<table_name>"
+│   │   ├── table_info.py                  # `table_info` blueprint:
+│   │   │                                   #   "/<table_name>"
+│   │   └── admin/                          # promoted subpackage
+│   │       ├── __init__.py                  # intentionally empty
+│   │       ├── routes.py                     # `admin` blueprint: login
+│   │       │                                 #   page + login_required
+│   │       │                                 #   landing page
+│   │       └── sections.py                    # declarative SECTIONS
+│   │                                          #   registry + fail-fast
+│   │                                          #   validate_sections()
 │   ├── api/
 │   │   ├── __init__.py             # intentionally empty (no logic here)
 │   │   ├── routes.py                # register(app): delegates to each
@@ -106,14 +116,24 @@ wedding/
 │   │   ├── home.html
 │   │   ├── contact.html
 │   │   ├── rsvp.html
-│   │   └── rsvp_guest.html
+│   │   ├── rsvp_guest.html
+│   │   ├── admin.html                  # loops over the admin registry
+│   │   └── admin/
+│   │       └── _macros.html            # generic section/action/field
+│   │                                    #   macros (never per-endpoint)
 │   └── static/
-│       └── favicon.png
+│       ├── favicon.png
+│       └── js/
+│           └── admin.js                # generic runner for every
+│                                        #   registry-driven admin action
 ├── tests/
 │   ├── __init__.py
 │   ├── conftest.py                # puts src/ on sys.path for flat imports
 │   ├── core/
 │   │   └── test_config.py         # mirrors src/core/config.py
+│   ├── pages/
+│   │   └── admin/
+│   │       └── test_sections.py   # mirrors src/pages/admin/sections.py
 │   └── test_main.py               # mirrors src/main.py; covers the app
 │                                  #   singleton + every registered route
 ├── Makefile                      # `make help` lists all shortcuts
@@ -131,28 +151,30 @@ wedding/
 └── uv.lock
 ```
 
-**Blueprint pattern:** `src/pages/` and `src/api/v1/` are packages, but
-each feature is still just a single flat module inside them (e.g.
+**Blueprint pattern:** `src/pages/` and `src/api/v1/` are packages, and
+most features are still a single flat module inside them (e.g.
 `pages/rsvp.py`, `api/v1/health.py`) that defines `bp = Blueprint(...)`
-and its route(s) directly in that one file — there's no per-feature
-subpackage (e.g. no `pages/rsvp/routes.py` split) yet. If a feature area
-grows enough to warrant splitting further (multiple route files, helpers,
-or its own mock data), promote it to its own subpackage following the
-empty-`__init__.py` convention already used elsewhere: an `__init__.py`
-that stays completely empty (no `Blueprint(...)` instantiation, no
-imports) and a `routes.py` that defines the blueprint and views. Don't
-introduce this extra structure prematurely for a feature that's still a
-single small file.
+and its route(s) directly in that one file. `pages/admin/` is the first
+feature promoted to its own subpackage (`routes.py` + `sections.py`). If a
+feature area grows enough to warrant splitting further (multiple route
+files, helpers, or its own mock data), promote it the same way, following
+the empty-`__init__.py` convention: an `__init__.py` that stays completely
+empty (no `Blueprint(...)` instantiation, no imports) and a `routes.py`
+that defines the blueprint and views. Don't introduce this extra structure
+prematurely for a feature that's still a single small file.
 
 **Aggregator pattern (`routes.py` at the package root):** unlike a
 single-feature `routes.py`, `pages/routes.py`, `api/v1/routes.py`, and
 `api/routes.py` don't define their own blueprint — they each expose a
 `register(app: Flask) -> None` function that imports and registers every
 blueprint (or, for `api/routes.py`, every API version) beneath them, with
-prefixes baked in. This keeps `main.py` down to two calls
+prefixes baked in. This keeps `main.py` down to two registration calls
 (`pages.routes.register(app)`, `api.routes.register(app)`) with no
-`url_prefix=` literals of its own, while leaving every blueprint's
-endpoint name unchanged (`home.home`, `rsvp.rsvp`, `health.health_check`,
+`url_prefix=` literals of its own, followed by one deliberate extra call,
+`validate_admin_sections(app)`, which must run after *both* have
+registered (it resolves admin actions against the API's routes). Keep
+new registration logic in the aggregators, not in `main.py`. Endpoint
+names stay unchanged (`home.home`, `rsvp.rsvp`, `health.health_check`,
 ...) — deliberately *not* using Flask's native nested-Blueprint feature
 (`parent_bp.register_blueprint(child_bp)`), since that renames endpoints
 (e.g. `home.home` → `pages.home.home`) and would break every existing
@@ -178,6 +200,34 @@ endpoint name unchanged (`home.home`, `rsvp.rsvp`, `health.health_check`,
 
 Keep routes thin: they call into data-layer / service functions rather than
 embedding business logic directly.
+
+### Adding an admin action
+
+The `/admin` page is rendered entirely from `SECTIONS` in
+`src/pages/admin/sections.py`. Each `AdminSection` (for example
+"Gästlista") holds stacked `AdminAction` sub-sections, one per API
+endpoint. `templates/admin/_macros.html` and `static/js/admin.js` are
+generic, so **adding an action is a single registry edit**. Don't add
+per-endpoint template or JS code.
+
+- Reference the endpoint by its Flask endpoint name (`"guests.get_guest"`),
+  not by a URL path.
+- Declare every URL rule argument as an
+  `AdminField(..., location="path")` whose name matches the argument.
+  Every other field goes into the JSON body, which is sent only for
+  `POST` and `PUT`.
+- Blank body fields are omitted from the request, which matches
+  `GuestUpdate`'s `exclude_unset`. In update actions, use `tri_bool`
+  instead of `bool`, because a checkbox has no "unset" state and is
+  always sent.
+- Set `destructive=True` for anything irreversible. The button then
+  requires a second, confirming press.
+- `validate_sections()` runs at startup and raises `AdminRegistryError`
+  on an unknown endpoint, a disallowed method, path fields that don't
+  match the rule, body fields on `GET` or `DELETE`, or duplicate or
+  non-kebab-case ids. A typo fails loudly at boot, not on first click.
+- The module docstring in `sections.py` has copy-pasteable
+  get/update/delete examples.
 
 ## Mock Data Layer Rules (planned — not yet implemented)
 

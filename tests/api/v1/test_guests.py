@@ -11,18 +11,26 @@ from main import app
 
 
 class GuestsApiTestCase(unittest.TestCase):
-    """Base test case giving each test a clean `guests` table and a test client."""
+    """Base test case giving each test a clean `guests` table and an authenticated test client."""
 
     def setUp(self):
-        """Build a fresh test client and clear the shared in-memory guests table."""
+        """Build a fresh, admin-authenticated test client and clear the shared guests table."""
         self.client = app.test_client()
         limiter.reset()
+        self._original_secret_key = app.config.get("SECRET_KEY")
+        app.config["SECRET_KEY"] = app.config["SECRET_KEY"] or "test-secret-key"
+        with self.client.session_transaction() as http_session:
+            http_session["is_admin"] = True
         session = SessionLocal()
         try:
             session.query(Guest).delete()
             session.commit()
         finally:
             session.close()
+
+    def tearDown(self):
+        """Restore the original secret key configuration."""
+        app.config["SECRET_KEY"] = self._original_secret_key
 
     def _create_guest(self, **overrides):
         """Create a guest via the API and return its parsed JSON body.
@@ -38,6 +46,47 @@ class GuestsApiTestCase(unittest.TestCase):
         response = self.client.post("/api/v1/guests", json=payload)
         assert response.status_code == 201
         return response.get_json()
+
+
+class TestGuestsApiRequiresAdmin(GuestsApiTestCase):
+    """Test cases asserting that guest data is never readable without an admin session."""
+
+    def setUp(self):
+        """Start from the authenticated base fixture, then drop the admin session."""
+        super().setUp()
+        with self.client.session_transaction() as http_session:
+            http_session.pop("is_admin", None)
+
+    def test_every_guest_route_returns_401_json_when_unauthenticated(self):
+        """Test that each guests endpoint rejects unauthenticated callers with a 401 JSON error."""
+        requests = [
+            ("GET", "/api/v1/guests", None),
+            ("POST", "/api/v1/guests", {"name": "Fake Guest"}),
+            ("GET", "/api/v1/guests/1", None),
+            ("PUT", "/api/v1/guests/1", {"attending": True}),
+            ("DELETE", "/api/v1/guests/1", None),
+        ]
+
+        for method, path, payload in requests:
+            with self.subTest(method=method, path=path):
+                response = self.client.open(path, method=method, json=payload)
+
+                self.assertEqual(response.status_code, 401)
+                self.assertIn("error", response.get_json())
+
+    def test_unauthenticated_list_does_not_leak_guest_data(self):
+        """Test that an unauthenticated list request returns no guest fields at all."""
+        with self.client.session_transaction() as http_session:
+            http_session["is_admin"] = True
+        self._create_guest(name="Fake Guest", email="fake@example.com", allergies="peanuts")
+        with self.client.session_transaction() as http_session:
+            http_session.pop("is_admin", None)
+
+        response = self.client.get("/api/v1/guests")
+
+        self.assertEqual(response.status_code, 401)
+        self.assertNotIn(b"Fake Guest", response.data)
+        self.assertNotIn(b"peanuts", response.data)
 
 
 class TestListGuests(GuestsApiTestCase):
