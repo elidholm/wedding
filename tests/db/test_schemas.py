@@ -42,8 +42,8 @@ class TestGuestTable(unittest.TestCase):
             "name",
             "email",
             "attending",
-            "plus_one",
-            "allergies",
+            "plus_one_allowed",
+            "plus_one_name",
             "food_preferences",
             "created_at",
             "updated_at",
@@ -78,7 +78,7 @@ class TestCreateAllAgainstAFreshEngine(unittest.TestCase):
         session = sessionmaker(bind=test_engine)()
 
         try:
-            session.add(Guest(name="Jane Doe", plus_one=True, allergies="peanuts"))
+            session.add(Guest(name="Jane Doe", plus_one_allowed=True, food_preferences="vegan"))
             session.commit()
 
             guest = session.query(Guest).filter_by(name="Jane Doe").one()
@@ -87,9 +87,9 @@ class TestCreateAllAgainstAFreshEngine(unittest.TestCase):
             self.assertEqual(guest.name, "Jane Doe")
             self.assertIsNone(guest.email)
             self.assertIsNone(guest.attending)
-            self.assertTrue(guest.plus_one)
-            self.assertEqual(guest.allergies, "peanuts")
-            self.assertIsNone(guest.food_preferences)
+            self.assertTrue(guest.plus_one_allowed)
+            self.assertIsNone(guest.plus_one_name)
+            self.assertEqual(guest.food_preferences, "vegan")
 
         finally:
             session.close()

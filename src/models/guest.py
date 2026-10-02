@@ -42,9 +42,8 @@ class GuestBase(BaseModel):
             valid email format, up to 255 characters. Defaults to None.
         attending (bool | None): Whether the guest is attending. ``None`` means
             they haven't responded yet. Defaults to None.
-        plus_one (bool): Whether the guest is allowed to bring a plus-one. Defaults to False.
-        allergies (str | None): Free-text description of the guest's allergies,
-            up to 500 characters. Defaults to None.
+        plus_one_allowed (bool): Whether the guest is allowed to bring a plus-one. Defaults to False.
+        plus_one_name (str | None): The name of the guest's plus-one, if any. Defaults to None.
         food_preferences (str | None): Free-text description of the guest's food
             preferences, up to 500 characters. Defaults to None.
     """
@@ -54,8 +53,8 @@ class GuestBase(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     email: str | None = Field(default=None, max_length=255)
     attending: bool | None = None
-    plus_one: bool = False
-    allergies: str | None = Field(default=None, max_length=500)
+    plus_one_allowed: bool = False
+    plus_one_name: str | None = Field(default=None, max_length=120)
     food_preferences: str | None = Field(default=None, max_length=500)
 
     @field_validator("email")
@@ -80,6 +79,9 @@ class GuestUpdate(BaseModel):
         email (str | None): The guest's email address. Must be a valid email
             format, up to 255 characters, if provided.
         attending (bool | None): Whether the guest is attending.
+        plus_one_allowed (bool | None): Whether the guest is allowed to bring a plus-one.
+        plus_one_name (str | None): The name of the guest's plus-one, if any. Must be 1-120
+            characters, if provided.
         allergies (str | None): Free-text description of the guest's allergies,
             up to 500 characters, if provided.
         food_preferences (str | None): Free-text description of the guest's food
@@ -91,7 +93,8 @@ class GuestUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     email: str | None = Field(default=None, max_length=255)
     attending: bool | None = None
-    allergies: str | None = Field(default=None, max_length=500)
+    plus_one_allowed: bool | None = None
+    plus_one_name: str | None = Field(default=None, max_length=120)
     food_preferences: str | None = Field(default=None, max_length=500)
 
     @field_validator("email")

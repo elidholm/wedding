@@ -5,10 +5,14 @@ services.guest_service - Service layer for guest CRUD operations
 ``GuestService`` wraps a SQLAlchemy ``Session`` and exposes guest management operations.
 """
 
+import logging
+
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from db.schemas import Guest
+
+_log = logging.getLogger(__name__)
 
 
 class GuestService:
@@ -47,8 +51,8 @@ class GuestService:
         name: str,
         email: str | None = None,
         attending: bool | None = None,
-        plus_one: bool = False,
-        allergies: str | None = None,
+        plus_one_allowed: bool = False,
+        plus_one_name: str | None = None,
         food_preferences: str | None = None,
     ) -> Guest:
         """Create a new guest record.
@@ -57,10 +61,9 @@ class GuestService:
             name (str): The guest's full name.
             email (str | None): The guest's email address, if known. Defaults to None.
             attending (bool | None): Whether the guest is attending. Defaults to None.
-            plus_one (bool): Whether the guest is allowed to bring a
+            plus_one_allowed (bool): Whether the guest is allowed to bring a
                 plus-one. Defaults to False.
-            allergies (str | None): Free-text description of the guest's allergies.
-                Defaults to None.
+            plus_one_name (str | None): The name of the guest's plus-one, if any.
             food_preferences (str | None): Free-text description of the guest's food
                 preferences. Defaults to None.
 
@@ -71,12 +74,18 @@ class GuestService:
             SQLAlchemyError: If the record could not be persisted. The
                 session is rolled back before this is re-raised.
         """
+        if not plus_one_allowed and plus_one_name:
+            _log.warning(
+                "Guest is not allowed to bring a plus-one, but a plus-one name was provided. Ignoring plus-one name."
+            )
+            plus_one_name = None
+
         guest = Guest(
             name=name,
             email=email,
             attending=attending,
-            plus_one=plus_one,
-            allergies=allergies,
+            plus_one_allowed=plus_one_allowed,
+            plus_one_name=plus_one_name,
             food_preferences=food_preferences,
         )
         self._db.add(guest)
@@ -94,7 +103,8 @@ class GuestService:
         name: str | None = None,
         email: str | None = None,
         attending: bool | None = None,
-        allergies: str | None = None,
+        plus_one_allowed: bool | None = None,
+        plus_one_name: str | None = None,
         food_preferences: str | None = None,
     ) -> Guest | None:
         """Update an existing guest record.
@@ -107,8 +117,10 @@ class GuestService:
             name (str | None): The guest's full name. Defaults to None.
             email (str | None): The guest's email address. Defaults to None.
             attending (bool | None): Whether the guest is attending. Defaults to None.
-            allergies (str | None): Free-text description of the guest's allergies.
-                Defaults to None.
+            plus_one_allowed (bool | None): Whether the guest is allowed to bring a
+                plus-one. Defaults to None.
+            plus_one_name (str | None): The name of the guest's plus-one, if any. Defaults
+                to None.
             food_preferences (str | None): Free-text description of the guest's food
                 preferences. Defaults to None.
 
@@ -117,6 +129,7 @@ class GuestService:
             exists.
 
         Raises:
+            ValueError: If plus_one_name is provided but plus_one_allowed is False.
             SQLAlchemyError: If the update could not be persisted. The
                 session is rolled back before this is re-raised.
         """
@@ -130,8 +143,20 @@ class GuestService:
             guest.email = email
         if attending is not None:
             guest.attending = attending
-        if allergies is not None:
-            guest.allergies = allergies
+        if plus_one_allowed is not None:
+            guest.plus_one_allowed = plus_one_allowed
+            if not plus_one_allowed and guest.plus_one_name:
+                _log.warning(
+                    "Guest %d is no longer allowed to bring a plus-one, but they have a plus-one name. "
+                    "Clearing plus-one name.",
+                    guest_id,
+                )
+                guest.plus_one_name = None
+        if plus_one_name is not None:
+            if not guest.plus_one_allowed:
+                _log.error("Guest %d is not allowed to bring a plus-one, but a plus-one name was provided.", guest_id)
+                raise ValueError("Plus-one not allowed.")
+            guest.plus_one_name = plus_one_name
         if food_preferences is not None:
             guest.food_preferences = food_preferences
 

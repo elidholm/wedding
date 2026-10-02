@@ -78,7 +78,7 @@ class TestGuestsApiRequiresAdmin(GuestsApiTestCase):
         """Test that an unauthenticated list request returns no guest fields at all."""
         with self.client.session_transaction() as http_session:
             http_session["is_admin"] = True
-        self._create_guest(name="Fake Guest", email="fake@example.com", allergies="peanuts")
+        self._create_guest(name="Fake Guest", email="fake@example.com", food_preferences="peanut-free")
         with self.client.session_transaction() as http_session:
             http_session.pop("is_admin", None)
 
@@ -133,8 +133,8 @@ class TestCreateGuest(GuestsApiTestCase):
                 "name": "Jane Doe",
                 "email": "jane@example.com",
                 "attending": True,
-                "plus_one": True,
-                "allergies": "peanuts",
+                "plus_one_allowed": True,
+                "plus_one_name": "Alex Doe",
                 "food_preferences": "vegan",
             },
         )
@@ -144,8 +144,8 @@ class TestCreateGuest(GuestsApiTestCase):
         self.assertEqual(body["name"], "Jane Doe")
         self.assertEqual(body["email"], "jane@example.com")
         self.assertTrue(body["attending"])
-        self.assertTrue(body["plus_one"])
-        self.assertEqual(body["allergies"], "peanuts")
+        self.assertTrue(body["plus_one_allowed"])
+        self.assertEqual(body["plus_one_name"], "Alex Doe")
         self.assertEqual(body["food_preferences"], "vegan")
         self.assertIn(f"/api/v1/guests/{body['id']}", response.headers["Location"])
 
@@ -241,14 +241,14 @@ class TestUpdateGuest(GuestsApiTestCase):
 
     def test_updates_only_the_provided_fields(self):
         """Test that PUT only changes the fields explicitly provided."""
-        created = self._create_guest(name="Jane Doe", allergies="peanuts")
+        created = self._create_guest(name="Jane Doe", food_preferences="vegan")
 
         response = self.client.put(f"/api/v1/guests/{created['id']}", json={"attending": True})
 
         self.assertEqual(response.status_code, 200)
         body = response.get_json()
         self.assertTrue(body["attending"])
-        self.assertEqual(body["allergies"], "peanuts")
+        self.assertEqual(body["food_preferences"], "vegan")
 
     def test_returns_404_when_the_guest_does_not_exist(self):
         """Test that PUT for a nonexistent guest ID returns a 404 JSON error."""
