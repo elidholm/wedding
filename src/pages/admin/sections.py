@@ -201,7 +201,7 @@ SECTIONS: tuple[AdminSection, ...] = (
                     AdminField("email", "E-postadress", type="email"),
                     AdminField("attending", "Kommer", type="tri_bool"),
                     AdminField("plus_one_allowed", "Plus one tillåten", type="tri_bool"),
-                    AdminField("plus_one_name", "Namn på plus one"),
+                    AdminField("plus_one_name", "Namn på plus one", clearable=True),
                     AdminField("food_preferences", "Matpreferenser", type="textarea", clearable=True),
                 ),
             ),

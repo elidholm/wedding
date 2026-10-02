@@ -82,6 +82,8 @@ class GuestUpdate(BaseModel):
         plus_one_allowed (bool | None): Whether the guest is allowed to bring a plus-one.
         plus_one_name (str | None): The name of the guest's plus-one, if any. Must be 1-120
             characters, if provided.
+        clear_plus_one_name (bool | None): If True, clears the guest's plus-one name. If
+            False or None, leaves it unchanged.
         allergies (str | None): Free-text description of the guest's allergies,
             up to 500 characters, if provided.
         food_preferences (str | None): Free-text description of the guest's food
@@ -97,6 +99,7 @@ class GuestUpdate(BaseModel):
     attending: bool | None = None
     plus_one_allowed: bool | None = None
     plus_one_name: str | None = Field(default=None, max_length=120)
+    clear_plus_one_name: bool | None = None
     food_preferences: str | None = Field(default=None, max_length=500)
     clear_food_preferences: bool | None = None
 

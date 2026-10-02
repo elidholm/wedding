@@ -151,6 +151,27 @@ class TestUpdateGuest(GuestServiceTestCase):
         self.assertFalse(updated.plus_one_allowed)
         self.assertIsNone(updated.plus_one_name)
 
+    def test_clear_flags_remove_existing_optional_values(self):
+        """Test that explicit clear flags clear plus-one name and food preferences."""
+        created = self.service.create_guest(
+            name="Jane Doe",
+            plus_one_allowed=True,
+            plus_one_name="Alex Doe",
+            food_preferences="vegan",
+        )
+
+        updated = self.service.update_guest(
+            created.id,
+            plus_one_name="Ignored Name",
+            clear_plus_one_name=True,
+            food_preferences="ignored",
+            clear_food_preferences=True,
+        )
+
+        self.assertIsNotNone(updated)
+        self.assertIsNone(updated.plus_one_name)
+        self.assertIsNone(updated.food_preferences)
+
     def test_rejects_plus_one_name_when_guest_is_not_allowed_one(self):
         """Test that setting a plus-one name without permission is rejected."""
         created = self.service.create_guest(name="Jane Doe")
