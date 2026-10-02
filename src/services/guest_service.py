@@ -105,6 +105,7 @@ class GuestService:
         attending: bool | None = None,
         plus_one_allowed: bool | None = None,
         plus_one_name: str | None = None,
+        clear_plus_one_name: bool | None = None,
         food_preferences: str | None = None,
         clear_food_preferences: bool | None = None,
     ) -> Guest | None:
@@ -122,6 +123,7 @@ class GuestService:
                 plus-one. Defaults to None.
             plus_one_name (str | None): The name of the guest's plus-one, if any. Defaults
                 to None.
+            clear_plus_one_name (bool | None): If True, clears the guest's plus-one name.
             food_preferences (str | None): Free-text description of the guest's food
                 preferences. Defaults to None.
             clear_food_preferences (bool | None): If True, clears the guest's food preferences.
@@ -141,10 +143,13 @@ class GuestService:
 
         if name is not None:
             guest.name = name
+
         if email is not None:
             guest.email = email
+
         if attending is not None:
             guest.attending = attending
+
         if plus_one_allowed is not None:
             guest.plus_one_allowed = plus_one_allowed
             if not plus_one_allowed and guest.plus_one_name:
@@ -154,11 +159,17 @@ class GuestService:
                     guest_id,
                 )
                 guest.plus_one_name = None
-        if plus_one_name is not None:
+
+        if clear_plus_one_name:
+            if plus_one_name is not None:
+                _log.warning("Ignoring plus_one_name because clear_plus_one_name is True.")
+            guest.plus_one_name = None
+        elif plus_one_name is not None:
             if not guest.plus_one_allowed:
                 _log.error("Guest %d is not allowed to bring a plus-one, but a plus-one name was provided.", guest_id)
                 raise ValueError("Plus-one not allowed.")
             guest.plus_one_name = plus_one_name
+
         if clear_food_preferences:
             if food_preferences is not None:
                 _log.warning("Ignoring food_preferences because clear_food_preferences is True.")
