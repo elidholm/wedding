@@ -30,8 +30,8 @@ class Guest(Base):
         email (str | None): The guest's email address, if known.
         attending (bool | None): Whether the guest is attending. ``None`` means
             they haven't responded yet.
-        plus_ones (bool): Whether the guest is allowed to bring a plus-one. Defaults to False.
-        allergies (str | None): Free-text description of the guest's allergies.
+        plus_one_allowed (bool): Whether the guest is allowed to bring a plus-one. Defaults to False.
+        plus_one_name (str | None): The name of the guest's plus-one, if any.
         food_preferences (str | None): Free-text description of the guest's food
             preferences.
         created_at (datetime): When the guest record was created.
@@ -44,9 +44,10 @@ class Guest(Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     attending: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=None)
-    plus_one: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    allergies: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    plus_one_allowed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    plus_one_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     food_preferences: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -54,3 +55,6 @@ class Guest(Base):
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
     )
+
+    def __repr__(self) -> str:
+        return f"<Guest(id={self.id}, name={self.name}, email={self.email})>"

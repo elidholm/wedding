@@ -257,6 +257,9 @@ def update_guest(guest_id: int) -> Response:
     except SQLAlchemyError:
         _log.exception("Failed to update guest %d.", guest_id)
         return _error("Failed to update guest.", 500)
+    except ValueError as exc:
+        _log.error("Failed to update guest %d: %s", guest_id, exc)
+        return _error(str(exc), 400)
 
     if updated_guest is None:
         _log.error("Guest %d not found.", guest_id)
