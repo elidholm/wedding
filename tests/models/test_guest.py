@@ -20,10 +20,10 @@ class TestGuestCreate(unittest.TestCase):
         """Test that GuestCreate applies its documented defaults when only name is given."""
         guest = GuestCreate(name="Jane Doe")
 
-        self.assertFalse(guest.plus_one)
+        self.assertFalse(guest.plus_one_allowed)
+        self.assertIsNone(guest.plus_one_name)
         self.assertIsNone(guest.attending)
         self.assertIsNone(guest.email)
-        self.assertIsNone(guest.allergies)
         self.assertIsNone(guest.food_preferences)
 
     def test_all_fields_can_be_set(self):
@@ -32,15 +32,15 @@ class TestGuestCreate(unittest.TestCase):
             name="Jane Doe",
             email="jane@example.com",
             attending=True,
-            plus_one=True,
-            allergies="peanuts, lactose",
+            plus_one_allowed=True,
+            plus_one_name="Alex Doe",
             food_preferences="vegetarian",
         )
 
         self.assertEqual(guest.email, "jane@example.com")
         self.assertTrue(guest.attending)
-        self.assertTrue(guest.plus_one)
-        self.assertEqual(guest.allergies, "peanuts, lactose")
+        self.assertTrue(guest.plus_one_allowed)
+        self.assertEqual(guest.plus_one_name, "Alex Doe")
         self.assertEqual(guest.food_preferences, "vegetarian")
 
     def test_rejects_an_invalid_email_format(self):
@@ -69,14 +69,26 @@ class TestGuestUpdate(unittest.TestCase):
         self.assertIsNone(update.name)
         self.assertIsNone(update.email)
         self.assertIsNone(update.attending)
-        self.assertIsNone(update.allergies)
+        self.assertIsNone(update.plus_one_allowed)
+        self.assertIsNone(update.plus_one_name)
+        self.assertIsNone(update.clear_plus_one_name)
         self.assertIsNone(update.food_preferences)
+        self.assertIsNone(update.clear_food_preferences)
 
     def test_model_dump_exclude_unset_only_returns_provided_fields(self):
         """Test that exclude_unset=True only returns fields explicitly set by the caller."""
-        update = GuestUpdate(attending=True, allergies="peanuts, lactose")
+        update = GuestUpdate(attending=True, clear_food_preferences=True)
 
-        self.assertEqual(update.model_dump(exclude_unset=True), {"attending": True, "allergies": "peanuts, lactose"})
+        self.assertEqual(
+            update.model_dump(exclude_unset=True),
+            {"attending": True, "clear_food_preferences": True},
+        )
+
+    def test_explicit_none_is_preserved_by_exclude_unset(self):
+        """Test that explicit null values remain distinguishable from omitted update fields."""
+        update = GuestUpdate(plus_one_name=None)
+
+        self.assertEqual(update.model_dump(exclude_unset=True), {"plus_one_name": None})
 
     def test_rejects_an_invalid_email_format(self):
         """Test that constructing a GuestUpdate with a malformed email raises a ValidationError."""
@@ -100,8 +112,8 @@ class TestGuestRead(unittest.TestCase):
             name = "Jane Doe"
             email = None
             attending = None
-            plus_one = True
-            allergies = None
+            plus_one_allowed = True
+            plus_one_name = "Alex Doe"
             food_preferences = None
             created_at = datetime.now(UTC)
             updated_at = datetime.now(UTC)
@@ -110,6 +122,8 @@ class TestGuestRead(unittest.TestCase):
 
         self.assertEqual(guest.id, 1)
         self.assertEqual(guest.name, "Jane Doe")
+        self.assertTrue(guest.plus_one_allowed)
+        self.assertEqual(guest.plus_one_name, "Alex Doe")
 
     def test_id_created_at_and_updated_at_are_required(self):
         """Test that GuestRead requires id, created_at, and updated_at."""
