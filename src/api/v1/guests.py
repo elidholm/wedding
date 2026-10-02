@@ -161,7 +161,7 @@ def list_guests() -> Response:
         guests = service.list_guests()
         _log.debug("Listed %d guests.", len(guests))
     except SQLAlchemyError:
-        _log.error("Failed to list guests.")
+        _log.exception("Failed to list guests.")
         return _error("Failed to list guests.", 500)
 
     return _json(
@@ -193,7 +193,7 @@ def create_guest() -> Response:
         created_guest = service.create_guest(**guest_data.model_dump(exclude_unset=True))
         _log.debug("Created guest %d.", created_guest.id)
     except SQLAlchemyError:
-        _log.error("Failed to create guest.")
+        _log.exception("Failed to create guest")
         return _error("Failed to create guest.", 500)
 
     response = _json(GuestRead.model_validate(created_guest).model_dump(mode="json"), 201)
@@ -219,13 +219,13 @@ def get_guest(guest_id: int) -> Response:
     service = get_guest_service()
     try:
         guest = service.get_guest(guest_id)
-        _log.debug("Retrieved guest %s.", guest_id)
+        _log.debug("Retrieved guest %d.", guest_id)
     except SQLAlchemyError:
-        _log.error("Failed to get guest %s.", guest_id)
+        _log.exception("Failed to get guest %d.", guest_id)
         return _error("Failed to get guest.", 500)
 
     if guest is None:
-        _log.error("Guest %s not found.", guest_id)
+        _log.error("Guest %d not found.", guest_id)
         return _error("Guest not found.", 404)
     return _json(GuestRead.model_validate(guest).model_dump(mode="json"), 200)
 
@@ -255,7 +255,7 @@ def update_guest(guest_id: int) -> Response:
         updated_guest = service.update_guest(guest_id, **guest_data.model_dump(exclude_unset=True))
         _log.debug("Updated guest %d.", guest_id)
     except SQLAlchemyError:
-        _log.error("Failed to update guest %d.", guest_id)
+        _log.exception("Failed to update guest %d.", guest_id)
         return _error("Failed to update guest.", 500)
 
     if updated_guest is None:
@@ -284,7 +284,7 @@ def delete_guest(guest_id: int) -> Response:
         deleted = service.delete_guest(guest_id)
         _log.debug("Deleted guest %d.", guest_id)
     except SQLAlchemyError:
-        _log.error("Failed to delete guest %d.", guest_id)
+        _log.exception("Failed to delete guest %d.", guest_id)
         return _error("Failed to delete guest.", 500)
 
     if not deleted:
