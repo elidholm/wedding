@@ -5,7 +5,7 @@ import unittest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from db.schemas import Base, Guest, SessionLocal, engine
+from db.schemas import Base, Guest, Invite, SessionLocal, engine
 
 
 class TestModuleLevelObjects(unittest.TestCase):
@@ -27,6 +27,10 @@ class TestModuleLevelObjects(unittest.TestCase):
         """Test that Guest's table is registered on Base's metadata."""
         self.assertIn(Guest.__tablename__, Base.metadata.tables)
 
+    def test_invite_schema_is_registered_on_base_metadata(self):
+        """Test that Invite's table is registered on Base's metadata."""
+        self.assertIn(Invite.__tablename__, Base.metadata.tables)
+
 
 class TestGuestTable(unittest.TestCase):
     """Test cases for the Guest ORM table definition."""
@@ -45,6 +49,7 @@ class TestGuestTable(unittest.TestCase):
             "plus_one_allowed",
             "plus_one_name",
             "food_preferences",
+            "invite_id",
             "created_at",
             "updated_at",
         }
@@ -62,14 +67,14 @@ class TestGuestTable(unittest.TestCase):
 class TestCreateAllAgainstAFreshEngine(unittest.TestCase):
     """Test cases exercising Base.metadata.create_all against an isolated engine."""
 
-    def test_create_all_creates_the_guests_table(self):
-        """Test that create_all() creates the guests table on a fresh in-memory engine."""
+    def test_create_all_creates_the_guest_and_invite_tables(self):
+        """Test that create_all() creates both tables on a fresh in-memory engine."""
         test_engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
         Base.metadata.create_all(bind=test_engine)
 
         table_names = test_engine.dialect.get_table_names(test_engine.connect())
 
-        self.assertIn("guests", table_names)
+        self.assertEqual(set(table_names), {"guests", "invites"})
 
     def test_a_row_can_be_inserted_and_queried_after_create_all(self):
         """Test that a Guest row can be persisted and read back after create_all()."""
@@ -91,6 +96,28 @@ class TestCreateAllAgainstAFreshEngine(unittest.TestCase):
             self.assertIsNone(guest.plus_one_name)
             self.assertEqual(guest.food_preferences, "vegan")
 
+        finally:
+            session.close()
+
+    def test_invite_and_guests_persist_with_bidirectional_relationship(self):
+        """Test that an invite and its guests persist and expose their associations."""
+        test_engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        Base.metadata.create_all(bind=test_engine)
+        session = sessionmaker(bind=test_engine)()
+
+        try:
+            invite = Invite(housing_needs="Accessible room")
+            invite.guests = [Guest(name="Jane Doe"), Guest(name="John Doe")]
+            session.add(invite)
+            session.commit()
+
+            fetched_invite = session.query(Invite).one()
+            fetched_guests = session.query(Guest).order_by(Guest.name).all()
+
+            self.assertEqual([guest.name for guest in fetched_invite.guests], ["Jane Doe", "John Doe"])
+            self.assertEqual([guest.invite_id for guest in fetched_guests], [invite.id, invite.id])
+            self.assertIs(fetched_guests[0].invite, fetched_invite)
+            self.assertEqual(fetched_invite.housing_needs, "Accessible room")
         finally:
             session.close()
 

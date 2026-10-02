@@ -5,8 +5,8 @@ db.schemas - SQLAlchemy engine, session factory, and declarative table schemas
 
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, DateTime, Integer, String, create_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, create_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 
 from core.config import get_config
 
@@ -34,6 +34,8 @@ class Guest(Base):
         plus_one_name (str | None): The name of the guest's plus-one, if any.
         food_preferences (str | None): Free-text description of the guest's food
             preferences.
+        invite_id (int | None): The ID of the invite associated with this guest, if any.
+        invite (Invite): The Invite object associated with this guest, if any.
         created_at (datetime): When the guest record was created.
         updated_at (datetime): When the guest record was last updated.
     """
@@ -48,6 +50,9 @@ class Guest(Base):
     plus_one_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     food_preferences: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
+    invite_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("invites.id"), nullable=True)
+    invite: Mapped["Invite"] = relationship("Invite", back_populates="guests")
+
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -58,3 +63,33 @@ class Guest(Base):
 
     def __repr__(self) -> str:
         return f"<Guest(id={self.id}, name={self.name}, email={self.email})>"
+
+
+class Invite(Base):
+    """ORM table schema for a wedding invite.
+
+    Attributes:
+        id (int): The invite's unique ID number (primary key).
+        guests (list[Guest]): The list of guests associated with this invite.
+        housing_needs (str | None): Free-text description of the invite's housing
+            needs, if any.
+        created_at (datetime): When the invite record was created.
+        updated_at (datetime): When the invite record was last updated.
+    """
+
+    __tablename__ = "invites"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    guests: Mapped[list[Guest]] = relationship("Guest", back_populates="invite")
+    housing_needs: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    def __repr__(self) -> str:
+        return f"<Invite(id={self.id}, guests={[guest.name for guest in self.guests]})>"
