@@ -106,6 +106,7 @@ class GuestService:
         plus_one_allowed: bool | None = None,
         plus_one_name: str | None = None,
         food_preferences: str | None = None,
+        clear_food_preferences: bool | None = None,
     ) -> Guest | None:
         """Update an existing guest record.
 
@@ -123,6 +124,7 @@ class GuestService:
                 to None.
             food_preferences (str | None): Free-text description of the guest's food
                 preferences. Defaults to None.
+            clear_food_preferences (bool | None): If True, clears the guest's food preferences.
 
         Returns:
             Guest | None: The updated guest record, or None if no guest with that ID
@@ -157,7 +159,11 @@ class GuestService:
                 _log.error("Guest %d is not allowed to bring a plus-one, but a plus-one name was provided.", guest_id)
                 raise ValueError("Plus-one not allowed.")
             guest.plus_one_name = plus_one_name
-        if food_preferences is not None:
+        if clear_food_preferences:
+            if food_preferences is not None:
+                _log.warning("Ignoring food_preferences because clear_food_preferences is True.")
+            guest.food_preferences = None
+        elif food_preferences is not None:
             guest.food_preferences = food_preferences
 
         try:

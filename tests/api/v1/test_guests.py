@@ -250,6 +250,18 @@ class TestUpdateGuest(GuestsApiTestCase):
         self.assertTrue(body["attending"])
         self.assertEqual(body["food_preferences"], "vegan")
 
+    def test_clear_food_preferences_flag_clears_existing_value(self):
+        """Test that the explicit clear flag removes an existing food preference."""
+        created = self._create_guest(name="Jane Doe", food_preferences="vegan")
+
+        response = self.client.put(
+            f"/api/v1/guests/{created['id']}",
+            json={"clear_food_preferences": True},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.get_json()["food_preferences"])
+
     def test_returns_404_when_the_guest_does_not_exist(self):
         """Test that PUT for a nonexistent guest ID returns a 404 JSON error."""
         response = self.client.put("/api/v1/guests/999999", json={"attending": True})

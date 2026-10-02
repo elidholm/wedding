@@ -86,6 +86,8 @@ class GuestUpdate(BaseModel):
             up to 500 characters, if provided.
         food_preferences (str | None): Free-text description of the guest's food
             preferences, up to 500 characters, if provided.
+        clear_food_preferences (bool | None): If True, clears the guest's food preferences.
+            If False or None, leaves them unchanged.
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -96,6 +98,7 @@ class GuestUpdate(BaseModel):
     plus_one_allowed: bool | None = None
     plus_one_name: str | None = Field(default=None, max_length=120)
     food_preferences: str | None = Field(default=None, max_length=500)
+    clear_food_preferences: bool | None = None
 
     @field_validator("email")
     @classmethod

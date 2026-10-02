@@ -91,6 +91,8 @@ class AdminField:
         required (bool): Whether the field must be filled in before the
             action can be submitted. Defaults to False.
         help (str | None): Optional helper text shown under the field.
+        clearable (bool): Whether the field can be cleared by the user. If
+            True, a checkbox is shown under the input. Defaults to False.
     """
 
     name: str
@@ -99,6 +101,7 @@ class AdminField:
     location: FieldLocation = "body"
     required: bool = False
     help: str | None = None
+    clearable: bool = False
 
 
 @dataclass(frozen=True)
@@ -199,7 +202,7 @@ SECTIONS: tuple[AdminSection, ...] = (
                     AdminField("attending", "Kommer", type="tri_bool"),
                     AdminField("plus_one_allowed", "Plus one tillåten", type="tri_bool"),
                     AdminField("plus_one_name", "Namn på plus one"),
-                    AdminField("food_preferences", "Matpreferenser", type="textarea"),
+                    AdminField("food_preferences", "Matpreferenser", type="textarea", clearable=True),
                 ),
             ),
             AdminAction(
