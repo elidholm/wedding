@@ -19,12 +19,12 @@ API consumers never have to deal with Flask's default HTML error pages.
 
 import logging
 
-from flask import Blueprint, Response, g, jsonify, request, session, url_for
-from pydantic import ValidationError
+from flask import Blueprint, Response, g, request, session, url_for
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from api.extensions import limiter
+from api.v1.utils import error, json, parse_body
 from db.schemas import SessionLocal
 from models.guest import GuestCreate, GuestRead, GuestUpdate
 from services.guest_service import GuestService
@@ -73,36 +73,6 @@ def get_guest_service() -> GuestService:
     return GuestService(session=_get_db_session())
 
 
-def _json(payload: object, status: int) -> Response:
-    """Build a JSON response with an explicit status code.
-
-    Args:
-        payload (object): The JSON-serializable payload to return.
-        status (int): The HTTP status code for the response.
-
-    Returns:
-        Response: The resulting Flask response.
-    """
-    response = jsonify(payload)
-    response.status_code = status
-    return response
-
-
-def _error(message: str, status: int, **extra: object) -> Response:
-    """Build a JSON error response of the shape ``{"error": message, **extra}``.
-
-    Args:
-        message (str): A human-readable error message.
-        status (int): The HTTP status code for the response.
-        **extra (object): Any additional fields to merge into the error body
-            (e.g. ``details`` for validation errors).
-
-    Returns:
-        Response: The resulting Flask error response.
-    """
-    return _json({"error": message, **extra}, status)
-
-
 @bp.before_request
 def _require_admin() -> Response | None:
     """Reject any request to this resource that lacks an admin session.
@@ -113,35 +83,8 @@ def _require_admin() -> Response | None:
         request proceed to its view.
     """
     if not session.get("is_admin"):
-        return _error("Admin authentication required.", 401)
+        return error("Admin authentication required.", 401)
     return None
-
-
-def _parse_body(model: type[GuestCreate] | type[GuestUpdate], payload: object) -> GuestCreate | GuestUpdate | Response:
-    """Validate a request's JSON body against a guest pydantic model.
-
-    Args:
-        model (type[GuestCreate] | type[GuestUpdate]): The model to validate against.
-        payload (object): The parsed JSON body (or None if missing/invalid JSON).
-
-    Returns:
-        GuestCreate | GuestUpdate | Response: The validated model instance,
-        or a ready-to-return 400 error Response if the body was missing,
-        not valid JSON, or failed validation.
-    """
-    if payload is None:
-        _log.error("Request body is missing or not valid JSON.")
-        return _error("Request body must be valid JSON.", 400)
-
-    try:
-        return model.model_validate(payload)
-    except ValidationError as exc:
-        _log.error("Request body failed validation: %s", exc.errors(include_url=False, include_context=False))
-        return _error(
-            "Invalid request data.",
-            400,
-            details=exc.errors(include_url=False, include_context=False),
-        )
 
 
 @bp.get("")
@@ -162,9 +105,9 @@ def list_guests() -> Response:
         _log.debug("Listed %d guests.", len(guests))
     except SQLAlchemyError:
         _log.exception("Failed to list guests.")
-        return _error("Failed to list guests.", 500)
+        return error("Failed to list guests.", 500)
 
-    return _json(
+    return json(
         [GuestRead.model_validate(guest).model_dump(mode="json") for guest in guests],
         200,
     )
@@ -184,7 +127,7 @@ def create_guest() -> Response:
         not an authenticated admin; 500 if the record could not be
         persisted.
     """
-    guest_data = _parse_body(GuestCreate, request.get_json(silent=True))
+    guest_data = parse_body(GuestCreate, request.get_json(silent=True))
     if isinstance(guest_data, Response):
         return guest_data
 
@@ -194,9 +137,9 @@ def create_guest() -> Response:
         _log.debug("Created guest %d.", created_guest.id)
     except SQLAlchemyError:
         _log.exception("Failed to create guest")
-        return _error("Failed to create guest.", 500)
+        return error("Failed to create guest.", 500)
 
-    response = _json(GuestRead.model_validate(created_guest).model_dump(mode="json"), 201)
+    response = json(GuestRead.model_validate(created_guest).model_dump(mode="json"), 201)
     response.headers["Location"] = url_for("guests.get_guest", guest_id=created_guest.id)
     return response
 
@@ -222,12 +165,12 @@ def get_guest(guest_id: int) -> Response:
         _log.debug("Retrieved guest %d.", guest_id)
     except SQLAlchemyError:
         _log.exception("Failed to get guest %d.", guest_id)
-        return _error("Failed to get guest.", 500)
+        return error("Failed to get guest.", 500)
 
     if guest is None:
         _log.error("Guest %d not found.", guest_id)
-        return _error("Guest not found.", 404)
-    return _json(GuestRead.model_validate(guest).model_dump(mode="json"), 200)
+        return error("Guest not found.", 404)
+    return json(GuestRead.model_validate(guest).model_dump(mode="json"), 200)
 
 
 @bp.put("/<int:guest_id>")
@@ -246,7 +189,7 @@ def update_guest(guest_id: int) -> Response:
         session is not an authenticated admin; 404 if no guest with that
         ID exists; 500 if the update could not be persisted.
     """
-    guest_data = _parse_body(GuestUpdate, request.get_json(silent=True))
+    guest_data = parse_body(GuestUpdate, request.get_json(silent=True))
     if isinstance(guest_data, Response):
         return guest_data
 
@@ -256,15 +199,15 @@ def update_guest(guest_id: int) -> Response:
         _log.debug("Updated guest %d.", guest_id)
     except SQLAlchemyError:
         _log.exception("Failed to update guest %d.", guest_id)
-        return _error("Failed to update guest.", 500)
+        return error("Failed to update guest.", 500)
     except ValueError as exc:
         _log.error("Failed to update guest %d: %s", guest_id, exc)
-        return _error(str(exc), 400)
+        return error(str(exc), 400)
 
     if updated_guest is None:
         _log.error("Guest %d not found.", guest_id)
-        return _error("Guest not found.", 404)
-    return _json(GuestRead.model_validate(updated_guest).model_dump(mode="json"), 200)
+        return error("Guest not found.", 404)
+    return json(GuestRead.model_validate(updated_guest).model_dump(mode="json"), 200)
 
 
 @bp.delete("/<int:guest_id>")
@@ -288,9 +231,9 @@ def delete_guest(guest_id: int) -> Response:
         _log.debug("Deleted guest %d.", guest_id)
     except SQLAlchemyError:
         _log.exception("Failed to delete guest %d.", guest_id)
-        return _error("Failed to delete guest.", 500)
+        return error("Failed to delete guest.", 500)
 
     if not deleted:
         _log.error("Guest %d not found.", guest_id)
-        return _error("Guest not found.", 404)
+        return error("Guest not found.", 404)
     return Response(status=204, mimetype="application/json")
