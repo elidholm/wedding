@@ -86,7 +86,7 @@ class TestGuestsApiRequiresAdmin(GuestsApiTestCase):
 
         self.assertEqual(response.status_code, 401)
         self.assertNotIn(b"Fake Guest", response.data)
-        self.assertNotIn(b"peanuts", response.data)
+        self.assertNotIn(b"peanut-free", response.data)
 
 
 class TestListGuests(GuestsApiTestCase):
