@@ -19,8 +19,7 @@ import threading
 import unittest
 from pathlib import Path
 
-from playwright.sync_api import Browser, Playwright, sync_playwright
-from playwright.sync_api import Error as PlaywrightError
+from playwright.sync_api import Browser, Error, Playwright, sync_playwright
 from werkzeug.serving import make_server
 
 from main import app
@@ -75,7 +74,7 @@ def _browser_is_available() -> bool:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
             browser.close()
-    except PlaywrightError:
+    except Error:
         return False
 
     return True
