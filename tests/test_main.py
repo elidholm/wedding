@@ -83,13 +83,15 @@ class TestAdminPages(unittest.TestCase):
 
         body = self.client.get("/admin/").get_data(as_text=True)
 
-        self.assertEqual(body.count("data-admin-action"), 5)
+        self.assertEqual(body.count("data-admin-action"), 10)
         self.assertIn('data-method="GET"', body)
         self.assertIn('data-method="POST"', body)
         self.assertIn('data-method="PUT"', body)
         self.assertIn('data-method="DELETE"', body)
         self.assertIn('data-url-template="/api/v1/guests"', body)
         self.assertIn('data-url-template="/api/v1/guests/{guest_id}"', body)
+        self.assertIn('data-url-template="/api/v1/invites"', body)
+        self.assertIn('data-url-template="/api/v1/invites/{invite_id}"', body)
 
     def test_admin_home_loads_the_admin_script(self):
         """Test that the admin page loads the external admin.js runner with its config."""
