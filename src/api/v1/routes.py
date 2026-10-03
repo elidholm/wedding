@@ -15,6 +15,7 @@ from flask import Flask
 from api.v1.auth import bp as auth_bp
 from api.v1.guests import bp as guests_bp
 from api.v1.health import bp as health_bp
+from api.v1.invites import bp as invites_bp
 
 VERSION = "v1"
 
@@ -30,3 +31,4 @@ def register(app: Flask, api_prefix: str) -> None:
     app.register_blueprint(auth_bp, url_prefix=f"{api_prefix}/{VERSION}/auth")
     app.register_blueprint(health_bp, url_prefix=f"{api_prefix}/{VERSION}/health")
     app.register_blueprint(guests_bp, url_prefix=f"{api_prefix}/{VERSION}/guests")
+    app.register_blueprint(invites_bp, url_prefix=f"{api_prefix}/{VERSION}/invites")
