@@ -75,7 +75,25 @@
     if (type === "tri_bool") {
       return { present: true, value: raw === "true" };
     }
+    if (type === "list") {
+      return { present: true, value: parseList(raw) };
+    }
     return { present: true, value: raw };
+  }
+
+  // "1,2,3" and "1, 2, 3" both become [1, 2, 3]; non-numeric items stay strings.
+  function parseList(raw) {
+    return raw
+      .split(",")
+      .map(function (item) {
+        return item.trim();
+      })
+      .filter(function (item) {
+        return item !== "";
+      })
+      .map(function (item) {
+        return /^-?\d+(\.\d+)?$/.test(item) ? Number(item) : item;
+      });
   }
 
   function buildBody(form) {
