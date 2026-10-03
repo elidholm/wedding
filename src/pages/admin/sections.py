@@ -63,7 +63,7 @@ from typing import Literal
 from flask import Flask
 from werkzeug.routing import Rule
 
-FieldType = Literal["text", "email", "integer", "tri_bool", "bool", "textarea"]
+FieldType = Literal["text", "email", "integer", "tri_bool", "bool", "textarea", "list"]
 FieldLocation = Literal["path", "body"]
 HttpMethod = Literal["GET", "POST", "PUT", "DELETE"]
 
@@ -93,6 +93,8 @@ class AdminField:
         help (str | None): Optional helper text shown under the field.
         clearable (bool): Whether the field can be cleared by the user. If
             True, a checkbox is shown under the input. Defaults to False.
+        clear_name (str | None): Optional JSON key used by the clear checkbox.
+            Defaults to None, which uses ``"clear_" + name``. Only used for body fields.
     """
 
     name: str
@@ -102,6 +104,7 @@ class AdminField:
     required: bool = False
     help: str | None = None
     clearable: bool = False
+    clear_name: str | None = None
 
 
 @dataclass(frozen=True)
@@ -214,6 +217,69 @@ SECTIONS: tuple[AdminSection, ...] = (
                 submit_label="Ta bort gäst",
                 destructive=True,
                 fields=(AdminField("guest_id", "Gäst-ID", type="integer", location="path", required=True),),
+            ),
+        ),
+    ),
+    AdminSection(
+        id="invites",
+        title="Inbjudningar",
+        description="Hantera inbjudningar som skickas ut till gästerna.",
+        actions=(
+            AdminAction(
+                id="list",
+                title="Lista alla inbjudningar",
+                description="Hämta samtliga inbjudningar som just nu finns i databasen.",
+                endpoint="invites.list_invites",
+                submit_label="Generera inbjudningslista",
+            ),
+            AdminAction(
+                id="user",
+                title="Hämta en inbjudan",
+                description="Visa all information om en enskild inbjudan.",
+                endpoint="invites.get_invite",
+                submit_label="Hämta inbjudan",
+                fields=(AdminField("invite_id", "Inbjudan-ID", type="integer", location="path", required=True),),
+            ),
+            AdminAction(
+                id="create",
+                title="Skapa en inbjudan",
+                description="Skapar en ny inbjudan med de fält du fyller i.",
+                endpoint="invites.create_invite",
+                method="POST",
+                submit_label="Skapa inbjudan",
+                fields=(
+                    AdminField("guest_ids", "Gäst-ID:n (komma-separerad lista)", type="list"),
+                    AdminField("housing_needs", "Boendebehov"),
+                ),
+            ),
+            AdminAction(
+                id="update",
+                title="Uppdatera en inbjudan",
+                description="Ändra de fält du fyller i; tomma fält lämnas orörda.",
+                endpoint="invites.update_invite",
+                method="PUT",
+                submit_label="Spara ändringar",
+                fields=(
+                    AdminField("invite_id", "Inbjudan-ID", type="integer", location="path", required=True),
+                    AdminField(
+                        "guest_ids",
+                        "Gäst-ID:n (komma-separerad lista)",
+                        type="list",
+                        clearable=True,
+                        clear_name="clear_guests",
+                    ),
+                    AdminField("housing_needs", "Boendebehov", clearable=True),
+                ),
+            ),
+            AdminAction(
+                id="delete",
+                title="Ta bort en inbjudan",
+                description="Raderar inbjudan permanent.",
+                endpoint="invites.delete_invite",
+                method="DELETE",
+                submit_label="Ta bort inbjudan",
+                destructive=True,
+                fields=(AdminField("invite_id", "Inbjudan-ID", type="integer", location="path", required=True),),
             ),
         ),
     ),
