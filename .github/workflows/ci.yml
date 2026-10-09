@@ -124,29 +124,35 @@ jobs:
   python-test:
     name: Python tests (${{ matrix.python-version }})
     needs: changes
-    if: ${{ needs.changes.outputs.python == 'true' || needs.changes.outputs.pyproject == 'true'  || needs.changes.outputs.tests == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      RUN_PYTHON_TESTS: ${{ needs.changes.outputs.python == 'true' || needs.changes.outputs.pyproject == 'true' || needs.changes.outputs.tests == 'true' }}
     strategy:
       fail-fast: false
       matrix:
         python-version: ['3.12', '3.13', '3.14']
     steps:
       - name: Checkout
+        if: ${{ env.RUN_PYTHON_TESTS == 'true' }}
         uses: actions/checkout@v7
 
       - name: Install uv
+        if: ${{ env.RUN_PYTHON_TESTS == 'true' }}
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
 
       - name: Sync dependencies
+        if: ${{ env.RUN_PYTHON_TESTS == 'true' }}
         run: uv sync --frozen --all-extras --dev
 
       - name: Install Chromium for responsive tests
+        if: ${{ env.RUN_PYTHON_TESTS == 'true' }}
         run: uv run playwright install --with-deps chromium
 
       - name: Run pytest
+        if: ${{ env.RUN_PYTHON_TESTS == 'true' }}
         run: uv run pytest --cov=src --cov-report=term-missing --cov-fail-under=85
 
   lockfile-check:

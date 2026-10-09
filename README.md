@@ -212,10 +212,11 @@ Three GitHub Actions workflows run automatically:
   [Gitleaks](https://github.com/gitleaks/gitleaks) checks committed secrets and
   [CodeQL](https://codeql.github.com/) analyzes Python vulnerabilities.
 - **[CD - Build, E2E Test and Publish](.github/workflows/cd.yml)** — on push to
-  `master` and on `v*.*.*` tags: builds once and saves the image as an immutable
-  workflow artifact. Each staging matrix job loads it, starts an isolated container with
-  generated credentials and temporary SQLite storage, waits for health, and
-  runs the complete E2E suite on Chromium, Firefox, or WebKit. All three engines
+  `master` and on `v*.*.*` tags: builds once with an explicitly selected Buildx
+  `docker-container` builder and exports a single-platform Docker image tarball
+  as an immutable workflow artifact. Each staging matrix job loads it, starts an
+  isolated container with generated credentials and temporary SQLite storage,
+  waits for health, and runs the complete E2E suite on Chromium, Firefox, or WebKit. All three engines
   must pass to unlock GHCR
   publication of that same image, without rebuilding (tagged `latest`, by
   branch, by tag, and by commit SHA). Only the publish job has package-write
@@ -231,6 +232,8 @@ remaining coverage. Job names include their Python version or browser to make
 failures easy to identify. If branch protection requires the previous
 `Python tests (pytest)` check, update it to require all three versioned Python
 test checks after merging; workflow renaming does not update repository rules.
+The Python version matrix always reports each check; its steps are skipped when
+the change filter says Python tests are unnecessary.
 
 `Dependabot` (`.github/dependabot.yml`) opens weekly PRs to keep both Python dependencies (via `uv`) and GitHub Actions up to date.
 
