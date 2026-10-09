@@ -1,5 +1,5 @@
 ---
-name: Build and Push Docker Image
+name: Build, Test and Publish Docker Image
 
 on:
   push:
@@ -14,26 +14,21 @@ env:
 
 permissions:
   contents: read
-  pull-requests: write
+
+# All refs publish latest; superseded releases must not publish after newer ones.
+concurrency:
+  group: docker-delivery
+  cancel-in-progress: true
 
 jobs:
-  build-and-push:
-    name: Build and Push Image
+  build:
+    name: Build Image
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v4
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata (tags, labels)
         id: meta
@@ -46,9 +41,118 @@ jobs:
             type=ref,event=tag
             type=sha
 
-      - name: Build and push image
+      - name: Build image without publishing
         uses: docker/build-push-action@v7
         with:
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          context: .
+          push: false
+          tags: wedding-staging:${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=docker,dest=${{ runner.temp }}/image.tar
+
+      - name: Upload candidate image
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: candidate-image
+          path: ${{ runner.temp }}/image.tar
+          retention-days: 1
+          compression-level: 0
+
+  test:
+    name: Test Staging Image
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Download candidate image
+        uses: actions/download-artifact@v4.3.0
+        with:
+          name: candidate-image
+          path: ${{ runner.temp }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install test dependencies and Chromium
+        run: |
+          uv sync --frozen --all-extras --dev
+          uv run playwright install --with-deps chromium
+
+      - name: Start isolated staging
+        run: |
+          docker load --input "$RUNNER_TEMP/image.tar"
+          SECRET_KEY=$(openssl rand -hex 32)
+          ADMIN_PASSWORD=$(openssl rand -hex 32)
+          echo "::add-mask::$SECRET_KEY"
+          echo "::add-mask::$ADMIN_PASSWORD"
+          export SECRET_KEY ADMIN_PASSWORD
+          echo "E2E_ADMIN_PASSWORD=$ADMIN_PASSWORD" >> "$GITHUB_ENV"
+          docker run --detach --name wedding-staging \
+            --publish 127.0.0.1:5000:5000 \
+            --tmpfs /app/storage:rw,uid=1000,gid=1000,mode=0700 \
+            --env SECRET_KEY --env ADMIN_PASSWORD \
+            --env FLASK_ENV=production --env HOST=0.0.0.0 --env PORT=5000 \
+            --env DB_URL=sqlite:////app/storage/staging.db \
+            --workdir /app/src \
+            "wedding-staging:$GITHUB_SHA" \
+            flask --app main run --host=0.0.0.0 --port=5000 --no-debugger --no-reload
+          curl --fail --silent --show-error --retry 30 --retry-delay 2 \
+            --retry-connrefused --retry-all-errors --max-time 2 --retry-max-time 90 \
+            http://127.0.0.1:5000/api/v1/health
+
+      - name: Run required browser E2E suite
+        env:
+          E2E_BASE_URL: http://127.0.0.1:5000
+          E2E_ARTIFACT_DIR: ${{ runner.temp }}/e2e-results
+        run: uv run pytest tests/e2e --junitxml="$RUNNER_TEMP/e2e-results/results.xml"
+
+      - name: Collect staging logs and clean up
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/e2e-results"
+          docker logs wedding-staging > "$RUNNER_TEMP/e2e-results/container.log" 2>&1 || true
+          docker rm --force wedding-staging || true
+
+      - name: Upload test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: staging-test-results
+          path: ${{ runner.temp }}/e2e-results
+          retention-days: 7
+
+  publish:
+    name: Publish Tested Image
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download tested image
+        uses: actions/download-artifact@v4.3.0
+        with:
+          name: candidate-image
+          path: ${{ runner.temp }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish without rebuilding
+        env:
+          IMAGE_TAGS: ${{ needs.build.outputs.tags }}
+        run: |
+          docker load --input "$RUNNER_TEMP/image.tar"
+          while IFS= read -r tag; do
+            docker tag "wedding-staging:$GITHUB_SHA" "$tag"
+            docker push "$tag"
+          done <<< "$IMAGE_TAGS"

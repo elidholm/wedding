@@ -128,6 +128,46 @@ uv run playwright install chromium
 
 Without it the whole module is skipped, so `make test` still passes on a machine that hasn't run the above. Screenshots go to `tests/screenshots/` by default; override with `WEDDING_SCREENSHOT_DIR=/some/path`.
 
+### Staging E2E tests
+
+`tests/e2e/test_staging.py` uses Playwright against an external, disposable
+container. It covers public navigation, mobile layout/menu interaction, RSVP
+lookup and saved responses, and admin authentication. It uses the existing fake
+RSVP invitee `123456`, not real guest data. Chromium and admin credentials are
+required when `E2E_BASE_URL` is set; browser installation failures fail the suite.
+Without that URL these tests are skipped by the normal unit-test run.
+
+Run the same staging setup locally (after installing dependencies):
+
+```bash
+uv run playwright install --with-deps chromium
+docker build -t wedding-staging:local .
+export SECRET_KEY="$(openssl rand -hex 32)"
+export ADMIN_PASSWORD="$(openssl rand -hex 32)"
+docker run --detach --name wedding-staging \
+  --publish 127.0.0.1:5000:5000 \
+  --tmpfs /app/storage:rw,uid=1000,gid=1000,mode=0700 \
+  --env SECRET_KEY --env ADMIN_PASSWORD \
+  --env FLASK_ENV=production \
+  --env DB_URL=sqlite:////app/storage/staging.db \
+  --workdir /app/src wedding-staging:local \
+  flask --app main run --host=0.0.0.0 --port=5000 --no-debugger --no-reload
+curl --fail --silent --show-error --retry 30 --retry-delay 2 \
+  --retry-connrefused --retry-all-errors --max-time 2 --retry-max-time 90 \
+  http://127.0.0.1:5000/api/v1/health
+E2E_BASE_URL=http://127.0.0.1:5000 E2E_ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+  uv run pytest tests/e2e
+docker logs wedding-staging
+docker rm --force wedding-staging
+unset SECRET_KEY ADMIN_PASSWORD
+```
+
+Always remove the staging container after testing, including after a failure.
+SQLite storage is temporary and discarded with the container; RSVP state is
+in-memory. Screenshots of the final browser state go to
+`/tmp/wedding-e2e-results`; override with `E2E_ARTIFACT_DIR`. Only run this
+mutating suite against disposable staging, never production.
+
 ### CSS
 
 The custom stylesheet lives in `src/static/css/style.css` and is linked *after* Bootstrap so it can override Bootstrap's CSS custom properties (`--bs-*`) — the palette and typography are set that way rather than by recompiling Bootstrap's Sass. Theme values are defined as custom properties in the `:root` block at the top of the file. Lint it with:
@@ -152,7 +192,19 @@ Three GitHub Actions workflows run automatically:
 
 - **[`ci.yml`](.github/workflows/ci.yml)** — on every PR to `master` and weekly on a schedule. A `changes` job detects which file types changed and only runs the relevant lint/type-check/test jobs (Python lint via ruff, type-check via mypy, tests via pytest with coverage, HTML/Jinja via djlint, CSS via stylelint, Markdown via markdownlint-cli2, shell via shellcheck + shfmt, TOML via taplo, and the workflow files themselves via actionlint).
 - **[`security.yml`](.github/workflows/security.yml)** — on every PR to `master` and weekly on a schedule: [Gitleaks](https://github.com/gitleaks/gitleaks) scans for accidentally committed secrets, and [CodeQL](https://codeql.github.com/) statically analyzes the Python code for vulnerabilities.
-- **[`docker-publish.yml`](.github/workflows/docker-publish.yml)** — on push to `master` and on `v*.*.*` tags: builds the production Docker image and publishes it to the GitHub Container Registry (tagged `latest`, by branch, by tag, and by commit SHA).
+- **[`docker-publish.yml`](.github/workflows/docker-publish.yml)** — on push to
+  `master` and on `v*.*.*` tags: builds once and saves the image as an immutable
+  workflow artifact. A staging job loads it, starts an isolated container with
+  generated credentials and temporary SQLite storage, waits for health, and
+  runs the required Chromium E2E suite. Only successful tests unlock GHCR
+  publication of that same image, without rebuilding (tagged `latest`, by
+  branch, by tag, and by commit SHA). Only the publish job has package-write
+  permission. Shared concurrency cancels superseded deliveries across all
+  branches/tags, preventing an older in-flight run from publishing after its
+  successor. Container cleanup and diagnostic uploads run even on test failure;
+  test results, screenshots, and container logs are retained for seven days.
+  Staging is ephemeral on the Actions runner; publication to GHCR does not
+  deploy the app to a live hosting environment.
 
 `Dependabot` (`.github/dependabot.yml`) opens weekly PRs to keep both Python dependencies (via `uv`) and GitHub Actions up to date.
 
