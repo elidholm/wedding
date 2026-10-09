@@ -150,6 +150,7 @@ docker run --detach --name wedding-staging \
   --env SECRET_KEY --env ADMIN_PASSWORD \
   --env FLASK_ENV=production \
   --env DB_URL=sqlite:////app/storage/staging.db \
+  --env PYTHONPATH=/app/src \
   --workdir /app/src wedding-staging:local \
   flask --app main run --host=0.0.0.0 --port=5000 --no-debugger --no-reload
 curl --fail --silent --show-error --retry 30 --retry-delay 2 \

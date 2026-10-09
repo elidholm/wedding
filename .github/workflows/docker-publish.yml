@@ -98,6 +98,7 @@ jobs:
             --env SECRET_KEY --env ADMIN_PASSWORD \
             --env FLASK_ENV=production --env HOST=0.0.0.0 --env PORT=5000 \
             --env DB_URL=sqlite:////app/storage/staging.db \
+            --env PYTHONPATH=/app/src \
             --workdir /app/src \
             "wedding-staging:$GITHUB_SHA" \
             flask --app main run --host=0.0.0.0 --port=5000 --no-debugger --no-reload
