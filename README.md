@@ -228,9 +228,14 @@ Three GitHub Actions workflows run automatically:
 
 Both test matrices disable fail-fast so one failing leg does not cancel the
 remaining coverage. Job names include their Python version or browser to make
-failures easy to identify. If branch protection requires the previous
-`Python tests (pytest)` check, update it to require all three versioned Python
-test checks after merging; workflow renaming does not update repository rules.
+failures easy to identify. The stable `Pytest Results` check gathers all Python
+matrix results and fails on any failed or cancelled suite, or an unexpected
+skip. It passes intentional change-filter skips only when change detection
+succeeds. `Staging Pytest Results` requires every browser suite to succeed
+before publication. If branch protection requires the previous
+`Python tests (pytest)` check or individual versioned checks, update it to
+require `Pytest Results` after merging; workflow changes do not update
+repository rules.
 
 `Dependabot` (`.github/dependabot.yml`) opens weekly PRs to keep both Python dependencies (via `uv`) and GitHub Actions up to date.
 
