@@ -1,5 +1,5 @@
 ---
-name: CI
+name: CI - Quality Checks and Tests
 
 on:
   pull_request:
@@ -69,6 +69,9 @@ jobs:
               - 'uv.lock'
             tests:
               - 'tests/**'
+              - 'src/**'
+              - '.python-version'
+              - '.github/workflows/ci.yml'
 
       - name: Force all checks to run
         id: force
@@ -119,10 +122,14 @@ jobs:
         run: uv run mypy .
 
   python-test:
-    name: Python tests (pytest)
+    name: Python tests (${{ matrix.python-version }})
     needs: changes
     if: ${{ needs.changes.outputs.python == 'true' || needs.changes.outputs.pyproject == 'true'  || needs.changes.outputs.tests == 'true' }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13', '3.14']
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -131,9 +138,13 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
+          python-version: ${{ matrix.python-version }}
 
       - name: Sync dependencies
-        run: uv sync --all-extras --dev
+        run: uv sync --frozen --all-extras --dev
+
+      - name: Install Chromium for responsive tests
+        run: uv run playwright install --with-deps chromium
 
       - name: Run pytest
         run: uv run pytest --cov=src --cov-report=term-missing --cov-fail-under=85

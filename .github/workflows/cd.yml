@@ -1,5 +1,5 @@
 ---
-name: Build, Test and Publish Docker Image
+name: CD - Build, E2E Test and Publish
 
 on:
   push:
@@ -59,10 +59,16 @@ jobs:
           compression-level: 0
 
   test:
-    name: Test Staging Image
+    name: Staging E2E (${{ matrix.browser }})
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    env:
+      E2E_BROWSER: ${{ matrix.browser }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -78,10 +84,10 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Install test dependencies and Chromium
+      - name: Install test dependencies and browser
         run: |
           uv sync --frozen --all-extras --dev
-          uv run playwright install --with-deps chromium
+          uv run playwright install --with-deps "$E2E_BROWSER"
 
       - name: Start isolated staging
         run: |
@@ -123,7 +129,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: staging-test-results
+          name: staging-test-results-${{ matrix.browser }}
           path: ${{ runner.temp }}/e2e-results
           retention-days: 7
 

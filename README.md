@@ -133,8 +133,8 @@ Without it the whole module is skipped, so `make test` still passes on a machine
 `tests/e2e/test_staging.py` uses Playwright against an external, disposable
 container. It covers public navigation, mobile layout/menu interaction, RSVP
 lookup and saved responses, and admin authentication. It uses the existing fake
-RSVP invitee `123456`, not real guest data. Chromium and admin credentials are
-required when `E2E_BASE_URL` is set; browser installation failures fail the suite.
+RSVP invitee `123456`, not real guest data. The selected browser and admin
+credentials are required when `E2E_BASE_URL` is set; browser installation failures fail the suite.
 Without that URL these tests are skipped by the normal unit-test run.
 
 Run the same staging setup locally (after installing dependencies):
@@ -169,6 +169,13 @@ in-memory. Screenshots of the final browser state go to
 `/tmp/wedding-e2e-results`; override with `E2E_ARTIFACT_DIR`. Only run this
 mutating suite against disposable staging, never production.
 
+`E2E_BROWSER` selects `chromium` (the default), `firefox`, or `webkit`.
+Install the selected engine with `uv run playwright install --with-deps firefox`
+and set `E2E_BROWSER=firefox` on the pytest command to reproduce that matrix leg.
+Each engine runs every staging test, including layout checks at 320, 375, 768,
+and 1440 pixels; CD uses an isolated container and uniquely named diagnostic
+artifact for each engine.
+
 ### CSS
 
 The custom stylesheet lives in `src/static/css/style.css` and is linked *after* Bootstrap so it can override Bootstrap's CSS custom properties (`--bs-*`) — the palette and typography are set that way rather than by recompiling Bootstrap's Sass. Theme values are defined as custom properties in the `:root` block at the top of the file. Lint it with:
@@ -191,13 +198,25 @@ These hooks are a fast first line of defense — they don't replace running `mak
 
 Three GitHub Actions workflows run automatically:
 
-- **[`ci.yml`](.github/workflows/ci.yml)** — on every PR to `master` and weekly on a schedule. A `changes` job detects which file types changed and only runs the relevant lint/type-check/test jobs (Python lint via ruff, type-check via mypy, tests via pytest with coverage, HTML/Jinja via djlint, CSS via stylelint, Markdown via markdownlint-cli2, shell via shellcheck + shfmt, TOML via taplo, and the workflow files themselves via actionlint).
-- **[`security.yml`](.github/workflows/security.yml)** — on every PR to `master` and weekly on a schedule: [Gitleaks](https://github.com/gitleaks/gitleaks) scans for accidentally committed secrets, and [CodeQL](https://codeql.github.com/) statically analyzes the Python code for vulnerabilities.
-- **[`docker-publish.yml`](.github/workflows/docker-publish.yml)** — on push to
+- **[CI - Quality Checks and Tests](.github/workflows/ci.yml)** — on every PR to
+  `master`, daily, and on manual dispatch. A `changes` job selects relevant
+  lint/type-check jobs (ruff, mypy, djlint, stylelint, markdownlint-cli2,
+  shellcheck/shfmt, taplo, and actionlint). The Python test matrix runs the full
+  unit suite with the 85% coverage gate on Python 3.12, 3.13, and 3.14, installing
+  Chromium so responsive tests execute rather than skip. Any application,
+  template, static asset, test, dependency, Python-version, or CI workflow
+  change triggers this matrix. External staging tests run in CD, not against
+  the unit-test app.
+- **[Security - Secrets and Code Analysis](.github/workflows/security.yml)** —
+  on every PR to `master` and weekly:
+  [Gitleaks](https://github.com/gitleaks/gitleaks) checks committed secrets and
+  [CodeQL](https://codeql.github.com/) analyzes Python vulnerabilities.
+- **[CD - Build, E2E Test and Publish](.github/workflows/cd.yml)** — on push to
   `master` and on `v*.*.*` tags: builds once and saves the image as an immutable
-  workflow artifact. A staging job loads it, starts an isolated container with
+  workflow artifact. Each staging matrix job loads it, starts an isolated container with
   generated credentials and temporary SQLite storage, waits for health, and
-  runs the required Chromium E2E suite. Only successful tests unlock GHCR
+  runs the complete E2E suite on Chromium, Firefox, or WebKit. All three engines
+  must pass to unlock GHCR
   publication of that same image, without rebuilding (tagged `latest`, by
   branch, by tag, and by commit SHA). Only the publish job has package-write
   permission. Shared concurrency cancels superseded deliveries across all
@@ -206,6 +225,12 @@ Three GitHub Actions workflows run automatically:
   test results, screenshots, and container logs are retained for seven days.
   Staging is ephemeral on the Actions runner; publication to GHCR does not
   deploy the app to a live hosting environment.
+
+Both test matrices disable fail-fast so one failing leg does not cancel the
+remaining coverage. Job names include their Python version or browser to make
+failures easy to identify. If branch protection requires the previous
+`Python tests (pytest)` check, update it to require all three versioned Python
+test checks after merging; workflow renaming does not update repository rules.
 
 `Dependabot` (`.github/dependabot.yml`) opens weekly PRs to keep both Python dependencies (via `uv`) and GitHub Actions up to date.
 
