@@ -1,5 +1,5 @@
 ---
-name: Security Scanning
+name: Security - Secrets and Code Analysis
 on:
   pull_request:
     branches:

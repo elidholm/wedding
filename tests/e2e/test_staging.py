@@ -24,9 +24,12 @@ class TestStaging(unittest.TestCase):
     def setUpClass(cls) -> None:
         """Require credentials and Chromium whenever staging tests are requested."""
         cls.password = os.environ["E2E_ADMIN_PASSWORD"]
+        browser_name = os.environ.get("E2E_BROWSER", "chromium")
+        if browser_name not in {"chromium", "firefox", "webkit"}:
+            raise ValueError(f"Unsupported E2E_BROWSER: {browser_name}")
         cls.playwright = sync_playwright().start()
         cls.addClassCleanup(cls.playwright.stop)
-        cls.browser = cls.playwright.chromium.launch()
+        cls.browser = getattr(cls.playwright, browser_name).launch()
         cls.addClassCleanup(cls.browser.close)
         ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -54,17 +57,20 @@ class TestStaging(unittest.TestCase):
         expect(self.page.locator("main h1")).to_be_visible()
 
     def test_mobile_layout(self) -> None:
-        """Check narrow-screen overflow and exercise the mobile menu."""
+        """Check phone-to-desktop overflow and exercise the mobile menu."""
+        for width in (320, 375, 768, 1440):
+            self.page.set_viewport_size({"width": width, "height": 900})
+            for path in ("/", "/rsvp/", "/itinerary/", "/seating/", "/contact/"):
+                with self.subTest(width=width, path=path):
+                    response = self.page.goto(path)
+                    assert response is not None
+                    self.assertEqual(response.status, 200)
+                    self.assertLessEqual(
+                        self.page.evaluate("document.documentElement.scrollWidth"),
+                        self.page.evaluate("window.innerWidth") + 1,
+                        path,
+                    )
         self.page.set_viewport_size({"width": 320, "height": 900})
-        for path in ("/", "/rsvp/", "/itinerary/", "/seating/", "/contact/"):
-            response = self.page.goto(path)
-            assert response is not None
-            self.assertEqual(response.status, 200)
-            self.assertLessEqual(
-                self.page.evaluate("document.documentElement.scrollWidth"),
-                self.page.evaluate("window.innerWidth") + 1,
-                path,
-            )
         toggler = self.page.get_by_role("button", name="Visa/dölj meny")
         expect(toggler).to_be_visible()
         toggler.click()
