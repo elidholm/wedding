@@ -133,9 +133,20 @@ jobs:
           path: ${{ runner.temp }}/e2e-results
           retention-days: 7
 
+  pytest-results:
+    name: Staging Pytest Results
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all staging pytest suites to succeed
+        env:
+          TEST_RESULT: ${{ needs.test.result }}
+        run: test "$TEST_RESULT" = success
+
   publish:
     name: Publish Tested Image
-    needs: [build, test]
+    needs: [build, pytest-results]
     runs-on: ubuntu-latest
     permissions:
       contents: read

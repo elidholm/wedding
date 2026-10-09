@@ -149,6 +149,25 @@ jobs:
       - name: Run pytest
         run: uv run pytest --cov=src --cov-report=term-missing --cov-fail-under=85
 
+  pytest-results:
+    name: Pytest Results
+    needs: [changes, python-test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all pytest suites to succeed
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          TEST_RESULT: ${{ needs.python-test.result }}
+          TESTS_REQUIRED: ${{ needs.changes.outputs.python == 'true' || needs.changes.outputs.pyproject == 'true' || needs.changes.outputs.tests == 'true' }}
+        run: |
+          test "$CHANGES_RESULT" = success
+          if [ "$TESTS_REQUIRED" = true ]; then
+            test "$TEST_RESULT" = success
+          else
+            test "$TEST_RESULT" = skipped
+          fi
+
   lockfile-check:
     name: Lockfile check (uv)
     needs: changes
