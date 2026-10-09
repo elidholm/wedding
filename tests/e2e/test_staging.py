@@ -18,6 +18,7 @@ class TestStaging(unittest.TestCase):
     playwright: Playwright
     browser: Browser
     page: Page
+    password: str
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -44,12 +45,12 @@ class TestStaging(unittest.TestCase):
         response = self.page.goto("/")
         assert response is not None
         self.assertEqual(response.status, 200)
-        for label, path in (("OSA", "/rsvp"), ("Schema", "/itinerary/"), ("Bordsplacering", "/seating/")):
+        for label, path in (("OSA", "/rsvp"), ("Schema", "/itinerary"), ("Bordsplacering", "/seating")):
             self.page.locator("#navbar").get_by_role("link", name=label, exact=True).click()
             expect(self.page).to_have_url(re.compile(re.escape(BASE_URL + path) + r"/?$"))
             expect(self.page.locator("main h1")).to_be_visible()
         self.page.get_by_role("link", name="Kontakta oss", exact=True).click()
-        expect(self.page).to_have_url(BASE_URL + "/contact/")
+        expect(self.page).to_have_url(re.compile(re.escape(BASE_URL + "/contact") + r"/?$"))
         expect(self.page.locator("main h1")).to_be_visible()
 
     def test_mobile_layout(self) -> None:
@@ -106,7 +107,7 @@ class TestStaging(unittest.TestCase):
         expect(self.page.get_by_role("alert")).to_contain_text("Incorrect password")
         self.page.get_by_label("Lösenord").fill(self.password)
         self.page.get_by_role("button", name="Logga in").click()
-        expect(self.page).to_have_url(BASE_URL + "/admin/")
+        expect(self.page).to_have_url(re.compile(re.escape(BASE_URL + "/admin") + r"/?$"))
         expect(self.page.locator("[data-admin-action]").first).to_be_visible()
         response = self.context.request.post(BASE_URL + "/api/v1/auth/logout", data={})
         self.assertEqual(response.status, 200)
