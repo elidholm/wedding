@@ -146,6 +146,14 @@ class TestHomePage(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    def test_robots_txt_is_served_from_the_site_root(self):
+        """Test that crawler policy is available at /robots.txt as plain text."""
+        response = self.client.get("/robots.txt")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.mimetype.startswith("text/plain"))
+        self.assertEqual(response.get_data(as_text=True), "User-agent: *\nDisallow: /\n")
+
     def test_home_page_renders_configured_faq_entries(self):
         """Test that every configured FAQ question and answer is rendered on the home page."""
         body = self.client.get("/").get_data(as_text=True)
