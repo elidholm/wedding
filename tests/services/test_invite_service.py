@@ -95,7 +95,7 @@ class TestGetInvite(InviteServiceTestCase):
 
     def test_returns_none_for_a_missing_invite(self):
         """Test that get_invite returns None when no invite with that ID exists."""
-        self.assertIsNone(self.service.get_invite(999))
+        self.assertIsNone(self.service.get_invite("11111111-1111-1111-1111-111111111111"))
 
 
 class TestListInvites(InviteServiceTestCase):
@@ -142,7 +142,9 @@ class TestUpdateInvite(InviteServiceTestCase):
 
     def test_returns_none_for_a_missing_invite(self):
         """Test that update_invite returns None when no invite with that ID exists."""
-        self.assertIsNone(self.service.update_invite(999, housing_needs="test"))
+        self.assertIsNone(
+            self.service.update_invite("11111111-1111-1111-1111-111111111111", housing_needs="Updated needs")
+        )
 
     def test_updates_only_the_fields_that_were_set(self):
         """Test that update_invite only changes fields explicitly provided on InviteUpdate."""
@@ -213,7 +215,7 @@ class TestDeleteInvite(InviteServiceTestCase):
 
     def test_returns_false_for_a_missing_invite(self):
         """Test that delete_invite returns False when no invite with that ID exists."""
-        self.assertFalse(self.service.delete_invite(999))
+        self.assertFalse(self.service.delete_invite("11111111-1111-1111-1111-111111111111"))
 
     def test_returns_true_and_removes_an_existing_invite(self):
         """Test that delete_invite removes the invite and returns True."""

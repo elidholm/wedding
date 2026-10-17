@@ -238,7 +238,7 @@ SECTIONS: tuple[AdminSection, ...] = (
                 description="Visa all information om en enskild inbjudan.",
                 endpoint="invites.get_invite",
                 submit_label="Hämta inbjudan",
-                fields=(AdminField("invite_id", "Inbjudan-ID", type="integer", location="path", required=True),),
+                fields=(AdminField("invite_id", "Inbjudan-ID", type="text", location="path", required=True),),
             ),
             AdminAction(
                 id="create",
@@ -249,7 +249,7 @@ SECTIONS: tuple[AdminSection, ...] = (
                 submit_label="Skapa inbjudan",
                 fields=(
                     AdminField("guest_ids", "Gäst-ID:n (komma-separerad lista)", type="list"),
-                    AdminField("housing_needs", "Boendebehov"),
+                    AdminField("housing_needs", "Boendebehov", type="textarea"),
                 ),
             ),
             AdminAction(
@@ -260,7 +260,7 @@ SECTIONS: tuple[AdminSection, ...] = (
                 method="PUT",
                 submit_label="Spara ändringar",
                 fields=(
-                    AdminField("invite_id", "Inbjudan-ID", type="integer", location="path", required=True),
+                    AdminField("invite_id", "Inbjudan-ID", type="text", location="path", required=True),
                     AdminField(
                         "guest_ids",
                         "Gäst-ID:n (komma-separerad lista)",
@@ -268,7 +268,7 @@ SECTIONS: tuple[AdminSection, ...] = (
                         clearable=True,
                         clear_name="clear_guests",
                     ),
-                    AdminField("housing_needs", "Boendebehov", clearable=True),
+                    AdminField("housing_needs", "Boendebehov", type="textarea", clearable=True),
                 ),
             ),
             AdminAction(
@@ -279,7 +279,7 @@ SECTIONS: tuple[AdminSection, ...] = (
                 method="DELETE",
                 submit_label="Ta bort inbjudan",
                 destructive=True,
-                fields=(AdminField("invite_id", "Inbjudan-ID", type="integer", location="path", required=True),),
+                fields=(AdminField("invite_id", "Inbjudan-ID", type="text", location="path", required=True),),
             ),
         ),
     ),

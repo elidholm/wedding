@@ -78,9 +78,9 @@ class TestIntvitesApiRequiresAdmin(InvitesApiTestCase):
         requests = [
             ("GET", "/api/v1/invites", None),
             ("POST", "/api/v1/invites", {"name": "Fake Guest"}),
-            ("GET", "/api/v1/invites/1", None),
-            ("PUT", "/api/v1/invites/1", {"attending": True}),
-            ("DELETE", "/api/v1/invites/1", None),
+            ("GET", "/api/v1/invites/11111111-2222-3333-4444-555555555555", None),
+            ("PUT", "/api/v1/invites/11111111-2222-3333-4444-555555555555", {"housing_needs": "Updated needs"}),
+            ("DELETE", "/api/v1/invites/11111111-2222-3333-4444-555555555555", None),
         ]
 
         for method, path, payload in requests:
@@ -231,7 +231,7 @@ class TestGetInvite(InvitesApiTestCase):
 
     def test_returns_404_when_the_invite_does_not_exist(self):
         """Test that GET for a nonexistent invite ID returns a 404 JSON error."""
-        response = self.client.get("/api/v1/invites/999999")
+        response = self.client.get("/api/v1/invites/11111111-2222-3333-4444-555555555555")
 
         self.assertEqual(response.status_code, 404)
         self.assertIn("error", response.get_json())
@@ -309,7 +309,9 @@ class TestUpdateInvite(InvitesApiTestCase):
 
     def test_returns_404_when_the_invite_does_not_exist(self):
         """Test that PUT for a nonexistent invite ID returns a 404 JSON error."""
-        response = self.client.put("/api/v1/invites/999999", json={"housing_needs": "Updated needs"})
+        response = self.client.put(
+            "/api/v1/invites/11111111-1111-1111-1111-111111111111", json={"housing_needs": "Updated needs"}
+        )
 
         self.assertEqual(response.status_code, 404)
         self.assertIn("error", response.get_json())
@@ -350,7 +352,7 @@ class TestDeleteInvite(InvitesApiTestCase):
 
     def test_returns_404_when_the_invite_does_not_exist(self):
         """Test that DELETE for a nonexistent invite ID returns a 404 JSON error."""
-        response = self.client.delete("/api/v1/invites/999999")
+        response = self.client.delete("/api/v1/invites/11111111-2222-3333-4444-555555555555")
 
         self.assertEqual(response.status_code, 404)
         self.assertIn("error", response.get_json())

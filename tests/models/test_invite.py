@@ -83,7 +83,7 @@ class TestInviteRead(unittest.TestCase):
             updated_at = now
 
         class FakeInvite:
-            id = 4
+            id = "11111111-1111-1111-1111-111111111111"
             housing_needs = "Accessible room"
             created_at = now
             updated_at = now
@@ -93,7 +93,7 @@ class TestInviteRead(unittest.TestCase):
 
         invite = InviteRead.model_validate(FakeInvite())
 
-        self.assertEqual(invite.id, 4)
+        self.assertEqual(invite.id, "11111111-1111-1111-1111-111111111111")
         self.assertEqual(invite.housing_needs, "Accessible room")
         self.assertEqual(len(invite.guests), 1)
         self.assertEqual(invite.guests[0].name, "Jane Doe")
@@ -102,7 +102,7 @@ class TestInviteRead(unittest.TestCase):
     def test_requires_id_guests_and_timestamps(self):
         """Test that an invite read model requires persisted fields."""
         with self.assertRaises(ValidationError):
-            InviteRead(housing_needs="Accessible room")
+            InviteRead(housing_needs="Accessible room")  # type: ignore
 
 
 if __name__ == "__main__":

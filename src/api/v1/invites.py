@@ -18,6 +18,7 @@ API consumers never have to deal with Flask's default HTML error pages.
 """
 
 import logging
+from uuid import UUID
 
 from flask import Blueprint, Response, g, request, session, url_for
 from sqlalchemy.exc import SQLAlchemyError
@@ -134,12 +135,12 @@ def create_invite() -> Response:
     service = get_invite_service()
     try:
         created_invite = service.create_invite(**invite_data.model_dump(exclude_unset=True))
-        _log.debug("Created invite %d.", created_invite.id)
+        _log.debug("Created invite %s.", created_invite.id)
     except SQLAlchemyError:
         _log.exception("Failed to create invite")
         return error("Failed to create invite.", 500)
     except InvalidInviteError as exc:
-        _log.error("Failed to create invite: %s", exc)
+        _log.exception("Failed to create invite")
         return error(str(exc), 400)
 
     response = json(InviteRead.model_validate(created_invite).model_dump(mode="json"), 201)
@@ -147,15 +148,15 @@ def create_invite() -> Response:
     return response
 
 
-@bp.get("/<int:invite_id>")
+@bp.get("/<uuid:invite_id>")
 @limiter.limit("30 per minute")
-def get_invite(invite_id: int) -> Response:
+def get_invite(invite_id: UUID) -> Response:
     """Get a single invite by ID.
 
     Requires an authenticated admin session.
 
     Args:
-        invite_id (int): The invite's unique personal ID number.
+        invite_id (UUID): The invite's personal UUID.
 
     Returns:
         Response: 200 with the invite record, or 404 if no invite with that ID
@@ -164,27 +165,27 @@ def get_invite(invite_id: int) -> Response:
     """
     service = get_invite_service()
     try:
-        invite = service.get_invite(invite_id)
-        _log.debug("Retrieved invite %d.", invite_id)
+        invite = service.get_invite(str(invite_id))
+        _log.debug("Retrieved invite %s.", invite_id)
     except SQLAlchemyError:
-        _log.exception("Failed to get invite %d.", invite_id)
+        _log.exception("Failed to get invite %s.", invite_id)
         return error("Failed to get invite.", 500)
 
     if invite is None:
-        _log.error("Invite %d not found.", invite_id)
+        _log.error("Invite %s not found.", invite_id)
         return error("Invite not found.", 404)
     return json(InviteRead.model_validate(invite).model_dump(mode="json"), 200)
 
 
-@bp.put("/<int:invite_id>")
+@bp.put("/<uuid:invite_id>")
 @limiter.limit("5 per minute")
-def update_invite(invite_id: int) -> Response:
+def update_invite(invite_id: UUID) -> Response:
     """Update an existing invite record.
 
     Requires an authenticated admin session.
 
     Args:
-        invite_id (int): The unique personal ID number of the invite to update.
+        invite_id (UUID): The personal UUID of the invite to update.
 
     Returns:
         Response: 200 with the updated invite record; 400 if the request
@@ -198,30 +199,30 @@ def update_invite(invite_id: int) -> Response:
 
     service = get_invite_service()
     try:
-        updated_invite = service.update_invite(invite_id, **invite_data.model_dump(exclude_unset=True))
-        _log.debug("Updated invite %d.", invite_id)
+        updated_invite = service.update_invite(str(invite_id), **invite_data.model_dump(exclude_unset=True))
+        _log.debug("Updated invite %s.", invite_id)
     except SQLAlchemyError:
-        _log.exception("Failed to update invite %d.", invite_id)
+        _log.exception("Failed to update invite %s.", invite_id)
         return error("Failed to update invite.", 500)
     except ValueError as exc:
-        _log.error("Failed to update invite %d: %s", invite_id, exc)
+        _log.exception("Failed to update invite %s.", invite_id)
         return error(str(exc), 400)
 
     if updated_invite is None:
-        _log.error("Invite %d not found.", invite_id)
+        _log.error("Invite %s not found.", invite_id)
         return error("Invite not found.", 404)
     return json(InviteRead.model_validate(updated_invite).model_dump(mode="json"), 200)
 
 
-@bp.delete("/<int:invite_id>")
+@bp.delete("/<uuid:invite_id>")
 @limiter.limit("5 per minute")
-def delete_invite(invite_id: int) -> Response:
+def delete_invite(invite_id: UUID) -> Response:
     """Delete a invite record.
 
     Requires an authenticated admin session.
 
     Args:
-        invite_id (int): The unique personal ID number of the invite to delete.
+        invite_id (UUID): The personal UUID of the invite to delete.
 
     Returns:
         Response: 204 No Content on success; 401 if the session is not an
@@ -230,13 +231,13 @@ def delete_invite(invite_id: int) -> Response:
     """
     service = get_invite_service()
     try:
-        deleted = service.delete_invite(invite_id)
-        _log.debug("Deleted invite %d.", invite_id)
+        deleted = service.delete_invite(str(invite_id))
+        _log.debug("Deleted invite %s.", invite_id)
     except SQLAlchemyError:
-        _log.exception("Failed to delete invite %d.", invite_id)
+        _log.exception("Failed to delete invite %s.", invite_id)
         return error("Failed to delete invite.", 500)
 
     if not deleted:
-        _log.error("Invite %d not found.", invite_id)
+        _log.error("Invite %s not found.", invite_id)
         return error("Invite not found.", 404)
     return Response(status=204, mimetype="application/json")
