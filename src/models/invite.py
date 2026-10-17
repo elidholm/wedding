@@ -64,13 +64,13 @@ class InviteRead(InviteBase):
     """An invite record as read back from the database.
 
     Attributes:
-        id (int): The invite's unique ID number.
+        id (str): The invite's unique identifier.
         guests (list[GuestRead]): Guests associated with this invite.
         created_at (datetime): When the invite record was created.
         updated_at (datetime): When the invite record was last updated.
     """
 
-    id: int
+    id: str
     guests: list[GuestRead]
     created_at: datetime
     updated_at: datetime

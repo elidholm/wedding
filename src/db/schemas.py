@@ -3,6 +3,9 @@ db.schemas - SQLAlchemy engine, session factory, and declarative table schemas
 ------------------------------------------------------------------------------
 """
 
+from __future__ import annotations
+
+import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, create_engine
@@ -27,13 +30,13 @@ class Guest(Base):
         id (int): The guest's unique personal ID number (primary key), matching
             the ID printed on their invite.
         name (str): The guest's full name.
-        email (str | None): The guest's email address, if known.
-        attending (bool | None): Whether the guest is attending. ``None`` means
+        email (str | None): The guest's email address, if known. Defaults to None.
+        attending (bool | None): Whether the guest is attending. Defaults to None, meaning that
             they haven't responded yet.
         plus_one_allowed (bool): Whether the guest is allowed to bring a plus-one. Defaults to False.
-        plus_one_name (str | None): The name of the guest's plus-one, if any.
+        plus_one_name (str | None): The name of the guest's plus-one, if any. Defaults to None.
         food_preferences (str | None): Free-text description of the guest's food
-            preferences.
+            preferences. Defaults to None.
         invite_id (int | None): The ID of the invite associated with this guest, if any.
         invite (Invite): The Invite object associated with this guest, if any.
         created_at (datetime): When the guest record was created.
@@ -44,14 +47,14 @@ class Guest(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
-    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
     attending: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=None)
     plus_one_allowed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    plus_one_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    food_preferences: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    plus_one_name: Mapped[str | None] = mapped_column(String(120), nullable=True, default=None)
+    food_preferences: Mapped[str | None] = mapped_column(String(500), nullable=True, default=None)
 
-    invite_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("invites.id"), nullable=True)
-    invite: Mapped["Invite"] = relationship("Invite", back_populates="guests")
+    invite_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("invites.id"), nullable=True, default=None)
+    invite: Mapped[Invite] = relationship("Invite", back_populates="guests")
 
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(
@@ -69,19 +72,19 @@ class Invite(Base):
     """ORM table schema for a wedding invite.
 
     Attributes:
-        id (int): The invite's unique ID number (primary key).
+        id (str): The invite's unique ID string (primary key), generated as a UUID4.
         guests (list[Guest]): The list of guests associated with this invite.
         housing_needs (str | None): Free-text description of the invite's housing
-            needs, if any.
+            needs, if any. Defaults to None.
         created_at (datetime): When the invite record was created.
         updated_at (datetime): When the invite record was last updated.
     """
 
     __tablename__ = "invites"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     guests: Mapped[list[Guest]] = relationship("Guest", back_populates="invite")
-    housing_needs: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    housing_needs: Mapped[str | None] = mapped_column(String(500), nullable=True, default=None)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(

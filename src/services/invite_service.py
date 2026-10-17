@@ -41,11 +41,11 @@ class InviteService:
         """
         return self._db.query(Invite).all()
 
-    def get_invite(self, invite_id: int) -> Invite | None:
+    def get_invite(self, invite_id: str) -> Invite | None:
         """Get a single invite by ID.
 
         Args:
-            invite_id (int): The invite's unique personal ID number.
+            invite_id (str): The invite's unique personal UUID.
 
         Returns:
             Invite | None: The matching invite record, or None if no invite
@@ -93,7 +93,7 @@ class InviteService:
 
     def update_invite(
         self,
-        invite_id: int,
+        invite_id: str,
         guest_ids: list[int] | None = None,
         clear_guests: bool | None = None,
         housing_needs: str | None = None,
@@ -104,7 +104,7 @@ class InviteService:
         Leaving any argument as None will leave that field unchanged.
 
         Args:
-            invite_id (int): The unique ID number of the invite to update.
+            invite_id (str): The UUID of the invite to update.
             guest_ids (list[int] | None): The guests included in this invite.
                 Defaults to None.
             clear_guests (bool | None): If True, clear the guests in the invite.
@@ -128,14 +128,14 @@ class InviteService:
 
         if clear_guests:
             if guest_ids is not None:
-                _log.warning("Ignoring guests because clear_guests is True.")
+                _log.warning("Ignoring provided guests because clear_guests is True.")
             invite.guests = []
         elif guest_ids is not None:
             invite.guests = self._get_guests(guest_ids)
 
         if clear_housing_needs:
             if housing_needs is not None:
-                _log.warning("Ignoring housing_needs because clear_housing_needs is True.")
+                _log.warning("Ignoring provided housing_needs because clear_housing_needs is True.")
             invite.housing_needs = None
         elif housing_needs is not None:
             invite.housing_needs = housing_needs
@@ -148,11 +148,11 @@ class InviteService:
         self._db.refresh(invite)
         return invite
 
-    def delete_invite(self, invite_id: int) -> bool:
+    def delete_invite(self, invite_id: str) -> bool:
         """Delete an invite record.
 
         Args:
-            invite_id (int): The unique ID number of the invite to delete.
+            invite_id (str): The unique UUID of the invite to delete.
 
         Returns:
             bool: True if an invite was deleted, False if no invite with that ID
