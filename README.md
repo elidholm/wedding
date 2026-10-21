@@ -13,7 +13,10 @@ A Flask web app built as the digital hub for our wedding. Guests scan a personal
 
 - **Home** (`/`) — landing page, with an optional embedded Google Maps view of
   the venue.
-- **RSVP** (`/rsvp`) — guest lookup and RSVP form.
+- **RSVP** (`/rsvp/<invite UUID>`) — one RSVP form per invite, covering every
+  guest on it. Each invite's personal link (printed as a QR code on the
+  invitation) is shown as `rsvp_url` in the admin invite API; `/rsvp` lets
+  guests paste the invite code or link instead.
 - **Itinerary** (`/itinerary`) — the day's schedule.
 - **Seating** (`/seating`) — table seating info.
 - **Table info** (`/tables/<table_name>`) — per-table detail pages.
@@ -58,6 +61,15 @@ make run-local
 ```
 
 The app will be available at `http://localhost:5000` (or whatever `HOST`/`PORT` you configured in `.env`).
+
+To try the RSVP flow locally, seed a few clearly fake invites and open one of the printed links:
+
+```bash
+make seed
+# equivalent to: PYTHONPATH=src uv run python -m db.seed
+```
+
+Seeding is idempotent, and the fake invites have fixed UUIDs, so their links stay the same.
 
 With Docker Compose, via `run.sh`:
 
@@ -132,8 +144,8 @@ Without it the whole module is skipped, so `make test` still passes on a machine
 
 `tests/e2e/test_staging.py` uses Playwright against an external, disposable
 container. It covers public navigation, mobile layout/menu interaction, RSVP
-lookup and saved responses, and admin authentication. It uses the existing fake
-RSVP invitee `123456`, not real guest data. The selected browser and admin
+lookup and saved responses, and admin authentication. It creates its own
+clearly fake guest and invite through the admin API, never real guest data. The selected browser and admin
 credentials are required when `E2E_BASE_URL` is set; browser installation failures fail the suite.
 Without that URL these tests are skipped by the normal unit-test run.
 
@@ -164,8 +176,8 @@ unset SECRET_KEY ADMIN_PASSWORD
 ```
 
 Always remove the staging container after testing, including after a failure.
-SQLite storage is temporary and discarded with the container; RSVP state is
-in-memory. Screenshots of the final browser state go to
+SQLite storage, including RSVP answers, is temporary and discarded with the
+container. Screenshots of the final browser state go to
 `/tmp/wedding-e2e-results`; override with `E2E_ARTIFACT_DIR`. Only run this
 mutating suite against disposable staging, never production.
 
