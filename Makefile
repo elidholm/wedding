@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 .PHONY: help install fmt fmt-check lint lint-fix check test html-lint shell-lint toml-lint css-lint lock-check ci \
-	run dev stop run-local docker docker-up docker-down docker-logs shell clean
+	run dev stop run-local seed docker docker-up docker-down docker-logs shell clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -60,6 +60,9 @@ stop: ## Stop and remove containers via Docker Compose (./run.sh)
 
 run-local: ## Run the app directly with uv, without Docker
 	uv run python src/main.py
+
+seed: ## Seed fake invites into the local database and print their RSVP links
+	PYTHONPATH=src uv run python -m db.seed
 
 docker: ## Build the Docker image
 	docker compose build
