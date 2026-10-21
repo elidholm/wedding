@@ -372,6 +372,19 @@ class TestRsvpPage(unittest.TestCase):
         self.assertIn("Sessionen har gått ut".encode(), response.data)
         self.assertIsNone(self._get_guest(self.alex_id).attending)
 
+    def test_post_with_a_non_ascii_csrf_token_is_rejected(self):
+        """Test that a non-ASCII CSRF token is rejected like any other mismatch instead of crashing."""
+        self._open_invite(self.invite_id)
+
+        response = self.client.post(
+            f"/rsvp/{self.invite_id}",
+            data={"csrf_token": "é", f"guest-{self.alex_id}-attending": "yes"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Sessionen har gått ut".encode(), response.data)
+        self.assertIsNone(self._get_guest(self.alex_id).attending)
+
     def test_database_error_while_saving_returns_a_clear_500(self):
         """Test that a database failure while saving shows a friendly error with a 500 status."""
         csrf_token = self._open_invite(self.invite_id)

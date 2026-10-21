@@ -153,8 +153,10 @@ def rsvp_invite(invite_id: UUID) -> tuple[str, int] | Response:
     error = None
     saved = False
     status = 200
-    submitted_csrf_token = request.form.get("csrf_token", "")
-    if not secrets.compare_digest(submitted_csrf_token, session.get(_SESSION_CSRF_KEY, "")):
+    # Compare bytes: compare_digest raises TypeError on non-ASCII str input.
+    submitted_csrf_token = request.form.get("csrf_token", "").encode()
+    expected_csrf_token = str(session.get(_SESSION_CSRF_KEY, "")).encode()
+    if not secrets.compare_digest(submitted_csrf_token, expected_csrf_token):
         error = "Sessionen har gått ut. Ladda om sidan och försök igen."
     elif invite.guests:
         try:
