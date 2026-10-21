@@ -83,7 +83,7 @@ class Invite(Base):
     __tablename__ = "invites"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    guests: Mapped[list[Guest]] = relationship("Guest", back_populates="invite")
+    guests: Mapped[list[Guest]] = relationship("Guest", back_populates="invite", order_by="Guest.id")
     housing_needs: Mapped[str | None] = mapped_column(String(500), nullable=True, default=None)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
