@@ -58,7 +58,7 @@
                             ] %}
                             {% for endpoint, item_id, label in nav_items %}
                                 {% set is_active = request.endpoint == endpoint
-                                    or (endpoint == 'rsvp.rsvp' and request.endpoint == 'rsvp.rsvp_guest')
+                                    or (endpoint == 'rsvp.rsvp' and request.endpoint == 'rsvp.rsvp_invite')
                                     or (endpoint == 'home.home' and request.endpoint == 'home.home') %}
                                 <a class="nav-item nav-link{% if is_active %} active{% endif %}"
                                    id="{{ item_id }}"

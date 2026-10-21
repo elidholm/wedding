@@ -1,17 +1,34 @@
 """
 pages.rsvp - Page where guests can RSVP to the wedding.
 -------------------------------------------------------
+
+Every invite has a personal link, ``/rsvp/<invite UUID>``, printed as a QR
+code on the invitation. Opening it shows one RSVP form covering every guest
+on the invite. Guests without the link can paste the invite code (or the
+whole link) into the form on ``/rsvp``.
 """
 
+import logging
 import secrets
 from datetime import UTC, datetime
+from uuid import UUID
 
-from flask import Blueprint, current_app, make_response, redirect, render_template, request, session, url_for
+from flask import Blueprint, current_app, redirect, render_template, request, session, url_for
+from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.wrappers import Response
 
-from services.rsvp_service import find_guest, save_rsvp
+from api.extensions import limiter
+from db.schemas import Invite
+from db.session import get_db_session
+from services.rsvp_service import RsvpService
+
+_log = logging.getLogger(__name__)
 
 bp = Blueprint("rsvp", __name__)
+
+_SESSION_INVITE_KEY = "rsvp_invite_id"
+_SESSION_CSRF_KEY = "rsvp_csrf_token"
+_NOT_FOUND_ERROR = "Vi hittar ingen inbjudan med den koden. Kontrollera koden och försök igen."
 
 
 def _get_or_create_csrf_token() -> str:
@@ -20,104 +37,134 @@ def _get_or_create_csrf_token() -> str:
     Returns:
         str: The session's synchronizer-pattern CSRF token.
     """
-    token = session.get("rsvp_csrf_token")
+    token = session.get(_SESSION_CSRF_KEY)
     if not token:
         token = secrets.token_urlsafe(32)
-        session["rsvp_csrf_token"] = token
+        session[_SESSION_CSRF_KEY] = token
     return token
+
+
+def _parse_invite_code(code: str) -> str | None:
+    """Parse a pasted invite code, or a whole RSVP link, into a canonical invite UUID.
+
+    Args:
+        code (str): The code (or link) entered by the guest.
+
+    Returns:
+        str | None: The canonical lowercase UUID string, or None if the code
+        doesn't contain a valid UUID.
+    """
+    candidate = code.strip().rstrip("/").rsplit("/", 1)[-1]
+    try:
+        return str(UUID(candidate))
+    except ValueError:
+        return None
+
+
+def _render_rsvp_invite(invite: Invite | None, status: int = 200, **context: object) -> tuple[str, int]:
+    """Render an invite's RSVP page.
+
+    Args:
+        invite (Invite | None): The invite to render, or None for a not-found page.
+        status (int): The HTTP status code to respond with. Defaults to 200.
+        **context (object): Extra template context (e.g. ``error``, ``saved``).
+
+    Returns:
+        tuple[str, int]: The rendered HTML and its status code.
+    """
+    html = render_template(
+        "rsvp_invite.html",
+        config=current_app.config["CONFIG"],
+        current_year=datetime.now(tz=UTC).year,
+        invite=invite,
+        **context,
+    )
+    return html, status
 
 
 @bp.route("/", methods=["GET", "POST"])
 @bp.route("", methods=["GET", "POST"])
+@limiter.limit("10 per minute", methods=["POST"])
 def rsvp() -> str | Response:
-    """Render the RSVP search page, or handle its guest-lookup form submission.
+    """Render the RSVP lookup page, or handle its invite-code form submission.
 
-    On `POST`, validates the submitted `guest_id` is a six-digit number
-    belonging to a known guest, establishes an authenticated guest session
-    for that guest_id, and redirects to their RSVP page. Otherwise, re-renders
-    this search page with an inline error.
+    On `POST`, validates that the submitted `invite_id` (an invite UUID, or
+    a whole RSVP link containing one) belongs to a known invite and
+    redirects to that invite's RSVP page. Otherwise, re-renders this page
+    with an inline error.
 
     Returns:
-        str | Response: The rendered HTML for the RSVP search page, or a
-        redirect response to the guest's RSVP page.
+        str | Response: The rendered HTML for the RSVP lookup page, or a
+        redirect response to the invite's RSVP page.
     """
     error = None
-    guest_id = request.form.get("guest_id", "")
+    invite_code = request.form.get("invite_id", "")
     if request.method == "POST":
-        if not guest_id.isdigit() or len(guest_id) != 6:
-            error = "Ange det sexsiffriga ID-numret från din inbjudan."
-        elif find_guest(guest_id) is None:
-            error = "Vi hittar ingen inbjudan med det ID-numret. Kontrollera numret och försök igen."
+        invite_id = _parse_invite_code(invite_code)
+        if invite_id is None:
+            error = "Ange koden från din inbjudan, eller klistra in hela länken."
+        elif RsvpService(get_db_session()).get_invite(invite_id) is None:
+            error = _NOT_FOUND_ERROR
         else:
-            session["rsvp_guest_id"] = guest_id
-            return redirect(url_for("rsvp.rsvp_guest", guest_id=guest_id))
+            return redirect(url_for("rsvp.rsvp_invite", invite_id=invite_id))
 
     return render_template(
         "rsvp.html",
         config=current_app.config["CONFIG"],
         current_year=datetime.now(tz=UTC).year,
         error=error,
-        guest_id=guest_id,
+        invite_id=invite_code,
     )
 
 
-@bp.route("/<int:guest_id>", methods=["GET", "POST"])
-def rsvp_guest(guest_id: int) -> str | Response:
-    """Render the RSVP page for a specific guest.
+@bp.route("/<uuid:invite_id>", methods=["GET", "POST"])
+@limiter.limit("30 per minute")
+def rsvp_invite(invite_id: UUID) -> tuple[str, int] | Response:
+    """Render, or save, the RSVP form for every guest on an invite.
 
-    Access requires an authenticated guest session (established by a
-    successful lookup on the search page) matching this guest_id; the
-    six-digit guest_id in the URL is not accepted as sole proof of identity,
-    since it is guessable. POSTs are additionally checked against a
-    per-session CSRF token embedded in the form.
+    The invite's unguessable UUID link is the guest's credential: a `GET`
+    of a known invite marks this session as authenticated for it. A `POST`
+    is only accepted from a session authenticated for this same invite, and
+    must carry the session's CSRF token.
 
     Args:
-        guest_id (int): The unique identifier for the guest.
+        invite_id (UUID): The invite's UUID.
 
     Returns:
-        str | Response: The rendered HTML for the RSVP page for the specific
-        guest, or a redirect back to the search page if not authenticated.
+        tuple[str, int] | Response: The rendered RSVP page and its status
+        code (404 for an unknown invite), or a redirect back to this page
+        for a `POST` from an unauthenticated session.
     """
-    guest_id_str = str(guest_id).zfill(6)
-    if session.get("rsvp_guest_id") != guest_id_str:
-        return redirect(url_for("rsvp.rsvp"))
+    invite_id_str = str(invite_id)
+    service = RsvpService(get_db_session())
+    invite = service.get_invite(invite_id_str)
+    if invite is None:
+        if session.get(_SESSION_INVITE_KEY) == invite_id_str:
+            session.pop(_SESSION_INVITE_KEY)
+        return _render_rsvp_invite(None, 404, error=_NOT_FOUND_ERROR)
 
-    guest = find_guest(guest_id_str)
-    if guest is None:
-        session.pop("rsvp_guest_id", None)
-        response = make_response(
-            render_template(
-                "rsvp_guest.html",
-                config=current_app.config["CONFIG"],
-                current_year=datetime.now(tz=UTC).year,
-                guest_id=guest_id_str,
-                guest=None,
-                error="Vi hittar ingen inbjudan med det ID-numret. Kontrollera numret och försök igen.",
-            ),
-            404,
-        )
-        return response
+    if request.method == "GET":
+        session[_SESSION_INVITE_KEY] = invite_id_str
+        return _render_rsvp_invite(invite, csrf_token=_get_or_create_csrf_token())
+
+    if session.get(_SESSION_INVITE_KEY) != invite_id_str:
+        return redirect(url_for("rsvp.rsvp_invite", invite_id=invite_id_str))
 
     error = None
     saved = False
-    if request.method == "POST":
-        submitted_csrf_token = request.form.get("csrf_token", "")
-        if not secrets.compare_digest(submitted_csrf_token, session.get("rsvp_csrf_token", "")):
-            error = "Sessionen har gått ut. Ladda om sidan och försök igen."
-        else:
-            try:
-                guest = save_rsvp(guest_id_str, request.form)
-                saved = True
-            except ValueError as exc:
-                error = str(exc)
+    status = 200
+    submitted_csrf_token = request.form.get("csrf_token", "")
+    if not secrets.compare_digest(submitted_csrf_token, session.get(_SESSION_CSRF_KEY, "")):
+        error = "Sessionen har gått ut. Ladda om sidan och försök igen."
+    elif invite.guests:
+        try:
+            service.save_rsvp(invite_id_str, request.form)
+            saved = True
+        except ValueError as exc:
+            error = str(exc)
+        except SQLAlchemyError:
+            _log.exception("Failed to save RSVP for invite %s.", invite_id_str)
+            error = "Något gick fel när svaret skulle sparas. Försök igen om en stund."
+            status = 500
 
-    return render_template(
-        "rsvp_guest.html",
-        config=current_app.config["CONFIG"],
-        current_year=datetime.now(tz=UTC).year,
-        guest_id=guest_id_str,
-        guest=guest,
-        saved=saved,
-        error=error,
-        csrf_token=_get_or_create_csrf_token(),
-    )
+    return _render_rsvp_invite(invite, status, saved=saved, error=error, csrf_token=_get_or_create_csrf_token())

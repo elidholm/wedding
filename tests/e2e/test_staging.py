@@ -19,6 +19,7 @@ class TestStaging(unittest.TestCase):
     browser: Browser
     page: Page
     password: str
+    invite_id: str
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -32,6 +33,23 @@ class TestStaging(unittest.TestCase):
         cls.browser = getattr(cls.playwright, browser_name).launch()
         cls.addClassCleanup(cls.browser.close)
         ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
+        cls.invite_id = cls._create_fake_invite()
+
+    @classmethod
+    def _create_fake_invite(cls) -> str:
+        """Create a clearly fake guest and invite through the admin API, returning the invite's UUID."""
+        api = cls.playwright.request.new_context(base_url=BASE_URL)
+        try:
+            response = api.post("/api/v1/auth/login", data={"password": cls.password})
+            assert response.ok, f"Admin login failed: {response.status}"
+            response = api.post("/api/v1/guests", data={"name": "Alex Example", "plus_one_allowed": True})
+            assert response.status == 201, f"Creating the fake guest failed: {response.status}"
+            guest_id = response.json()["id"]
+            response = api.post("/api/v1/invites", data={"guest_ids": [guest_id]})
+            assert response.status == 201, f"Creating the fake invite failed: {response.status}"
+            return str(response.json()["id"])
+        finally:
+            api.dispose()
 
     def setUp(self) -> None:
         """Give each test a fresh unauthenticated browser context."""
@@ -76,30 +94,31 @@ class TestStaging(unittest.TestCase):
         toggler.click()
         expect(self.page.locator("#navbar")).to_be_visible()
         self.page.locator("#navbar").get_by_role("link", name="OSA", exact=True).click()
-        expect(self.page.locator('input[name="guest_id"]')).to_be_visible()
+        expect(self.page.locator('input[name="invite_id"]')).to_be_visible()
 
     def test_rsvp(self) -> None:
-        """Reject invalid lookup, submit a fake invitee's RSVP, and verify it survives reload."""
-        self.page.goto("/rsvp/123456")
-        expect(self.page).to_have_url(re.compile(re.escape(BASE_URL + "/rsvp") + r"/?$"))
-        self.page.locator('input[name="guest_id"]').fill("000000")
+        """Reject invalid lookups, submit a fake invite's RSVP, and verify it survives reload."""
+        self.page.goto("/rsvp/")
+        self.page.locator('input[name="invite_id"]').fill("00000000-0000-4000-8000-000000000000")
         self.page.locator('button[type="submit"]').click()
         expect(self.page.get_by_role("alert")).to_contain_text("Vi hittar ingen inbjudan")
-        self.page.locator('input[name="guest_id"]').fill("123456")
+        self.page.locator('input[name="invite_id"]').fill(self.invite_id)
         self.page.locator('button[type="submit"]').click()
-        expect(self.page).to_have_url(BASE_URL + "/rsvp/123456")
-        expect(self.page.locator("main")).to_contain_text("Alex Andersson")
-        self.page.locator('input[name="attending"][value="yes"]').check()
-        self.page.locator('input[name="bringing_plus_one"][value="yes"]').check()
-        self.page.locator("#plus_one_name").fill("Example Test Guest")
-        self.page.locator("#dietary_requirements").fill("Example vegetarian meal")
+        expect(self.page).to_have_url(BASE_URL + f"/rsvp/{self.invite_id}")
+        expect(self.page.locator("main")).to_contain_text("Alex Example")
+        self.page.locator('input[name$="-attending"][value="yes"]').check()
+        self.page.locator('input[name$="-bringing_plus_one"][value="yes"]').check()
+        self.page.locator('input[name$="-plus_one_name"]').fill("Example Test Guest")
+        self.page.locator('textarea[name$="-food_preferences"]').fill("Example vegetarian meal")
+        self.page.locator('input[name$="-email"]').fill("alex@example.com")
         self.page.locator("#housing_needs").fill("Example overnight stay")
-        self.page.get_by_role("button", name="Spara mitt svar").click()
-        expect(self.page.get_by_role("status")).to_contain_text("Ditt svar är sparat")
+        self.page.get_by_role("button", name="Spara våra svar").click()
+        expect(self.page.get_by_role("status")).to_contain_text("Ert svar är sparat")
         self.page.reload()
-        expect(self.page.locator('input[name="attending"][value="yes"]')).to_be_checked()
-        expect(self.page.locator("#plus_one_name")).to_have_value("Example Test Guest")
-        expect(self.page.locator("#dietary_requirements")).to_have_value("Example vegetarian meal")
+        expect(self.page.locator('input[name$="-attending"][value="yes"]')).to_be_checked()
+        expect(self.page.locator('input[name$="-plus_one_name"]')).to_have_value("Example Test Guest")
+        expect(self.page.locator('textarea[name$="-food_preferences"]')).to_have_value("Example vegetarian meal")
+        expect(self.page.locator('input[name$="-email"]')).to_have_value("alex@example.com")
         expect(self.page.locator("#housing_needs")).to_have_value("Example overnight stay")
 
     def test_admin_authentication(self) -> None:
