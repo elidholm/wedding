@@ -20,4 +20,4 @@ if str(SRC_DIR) not in sys.path:
 # dev database file. This must be set before anything imports `db.schemas`
 # (which reads `core.config.get_config()` — a cached singleton — at import
 # time), so it's set here, in the first module pytest loads.
-os.environ.setdefault("DB_URL", "sqlite:///:memory:")
+os.environ["DB_URL"] = "sqlite:///:memory:"
