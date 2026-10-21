@@ -9,6 +9,7 @@ from api.routes import register as register_api
 from core.config import get_config
 from core.logging import setup_logging
 from db.schemas import Base, engine
+from db.session import init_app as init_db_session
 from pages.admin.sections import validate_sections as validate_admin_sections
 from pages.routes import register as register_pages
 
@@ -30,6 +31,7 @@ app.config["SECRET_KEY"] = config.secret_key
 app.config["CONFIG"] = config
 
 Base.metadata.create_all(bind=engine)
+init_db_session(app)
 
 register_pages(app)
 register_api(app)

@@ -19,13 +19,12 @@ API consumers never have to deal with Flask's default HTML error pages.
 
 import logging
 
-from flask import Blueprint, Response, g, request, session, url_for
+from flask import Blueprint, Response, request, session, url_for
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
 
 from api.extensions import limiter
 from api.v1.utils import error, json, parse_body
-from db.schemas import SessionLocal
+from db.session import get_db_session
 from models.guest import GuestCreate, GuestRead, GuestUpdate
 from services.guest_service import GuestService
 
@@ -34,43 +33,13 @@ _log = logging.getLogger(__name__)
 bp = Blueprint("guests", __name__)
 
 
-def _get_db_session() -> Session:
-    """Get (or lazily open) the current request's SQLAlchemy session.
-
-    The session is stashed on Flask's request-scoped ``g`` object so every
-    call within the same request reuses it, and is closed automatically by
-    ``_close_db_session`` once the request tears down.
-
-    Returns:
-        Session: The current request's SQLAlchemy session.
-    """
-    if "guests_db_session" not in g:
-        g.guests_db_session = SessionLocal()
-    return g.guests_db_session
-
-
-@bp.teardown_request
-def _close_db_session(exception: BaseException | None = None) -> None:
-    """Close this request's database session, rolling back first on error.
-
-    Args:
-        exception (BaseException | None): The exception that ended the
-            request, if any, as passed by Flask's ``teardown_request`` hook.
-    """
-    session = g.pop("guests_db_session", None)
-    if session is not None:
-        if exception is not None:
-            session.rollback()
-        session.close()
-
-
 def get_guest_service() -> GuestService:
     """Get a GuestService bound to the current request's database session.
 
     Returns:
         GuestService: A GuestService instance for use within this request.
     """
-    return GuestService(session=_get_db_session())
+    return GuestService(session=get_db_session())
 
 
 @bp.before_request
