@@ -18,10 +18,15 @@ import os
 import threading
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from playwright.sync_api import Browser, Error, Playwright, sync_playwright
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from werkzeug.serving import make_server
 
+from db.schemas import Base, Guest, Invite
 from main import app
 
 # Widest phone-to-desktop range the layout must survive. 320px is the narrowest
@@ -32,7 +37,7 @@ VIEWPORT_WIDTHS = (320, 375, 768, 1440)
 PAGES = {
     "home": "/",
     "rsvp": "/rsvp/",
-    "rsvp-guest": "/rsvp/123456",
+    "rsvp-invite": "/rsvp/{invite_id}",
     "contact": "/contact/",
     "itinerary": "/itinerary/",
     "seating": "/seating/",
@@ -96,6 +101,21 @@ class TestResponsiveLayout(unittest.TestCase):
         # Force the Google Maps embed to render so the iframe is included in the
         # overflow measurement -- it is the element that used to break mobile.
         cls.config.googlemaps_key = cls._original_maps_key or "fake-test-key"
+        cls._original_secret_key = app.config.get("SECRET_KEY")
+        app.config["SECRET_KEY"] = cls._original_secret_key or "test-secret-key"
+
+        # The live server runs in another thread, so share one in-memory
+        # database connection across threads, seeded with a fake invite.
+        engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+        Base.metadata.create_all(bind=engine)
+        session_factory = sessionmaker(bind=engine)
+        with session_factory() as db:
+            invite = Invite(guests=[Guest(name="Alex Example", plus_one_allowed=True), Guest(name="Robin Example")])
+            db.add(invite)
+            db.commit()
+            cls.invite_id = invite.id
+        cls._session_patch = patch("db.session.SessionLocal", session_factory)
+        cls._session_patch.start()
 
         cls.server = _LiveServer(app)
         cls.server.start()
@@ -111,14 +131,17 @@ class TestResponsiveLayout(unittest.TestCase):
         cls.browser.close()
         cls._playwright.stop()
         cls.server.stop()
+        cls._session_patch.stop()
         cls.config.googlemaps_key = cls._original_maps_key
+        app.config["SECRET_KEY"] = cls._original_secret_key
 
     def _measure(self, page_name: str, path: str, width: int) -> tuple[int, int]:
         """Load a page at a given width, screenshot it, and return (scrollWidth, innerWidth)."""
         context = self.browser.new_context(viewport={"width": width, "height": 900})
         page = context.new_page()
         try:
-            page.goto(f"{self.server.base_url}{path}", wait_until="domcontentloaded")
+            response = page.goto(f"{self.server.base_url}{path}", wait_until="domcontentloaded")
+            assert response is not None and response.ok, f"{path} returned {response and response.status}"
             page.screenshot(path=str(SCREENSHOT_DIR / f"{page_name}-{width}.png"), full_page=True)
             return (
                 page.evaluate("document.documentElement.scrollWidth"),
@@ -132,7 +155,7 @@ class TestResponsiveLayout(unittest.TestCase):
         for page_name, path in PAGES.items():
             for width in VIEWPORT_WIDTHS:
                 with self.subTest(page=page_name, width=width):
-                    scroll_width, inner_width = self._measure(page_name, path, width)
+                    scroll_width, inner_width = self._measure(page_name, path.format(invite_id=self.invite_id), width)
 
                     self.assertLessEqual(
                         scroll_width,
