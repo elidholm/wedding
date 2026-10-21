@@ -6,8 +6,8 @@ repository. Follow these conventions for every change.
 ## What This Project Is
 
 A Flask + Jinja web application acting as the central hub for a wedding.
-Guests get a personal QR code (on their invite) linking to a unique RSVP page
-identified by a token/slug, e.g. `/rsvp/<token>`. The site also hosts day-of
+Each invite gets a personal QR code linking to a unique RSVP page
+identified by the invite's UUID, e.g. `/rsvp/<invite_id>`. The site also hosts day-of
 information (schedule, food/menu, seating, conversation-starter questions) and
 a "digital disposable camera" photo vault feature used at the reception (each
 guest gets a limited number of photo "shots").
@@ -32,9 +32,8 @@ guest gets a limited number of photo "shots").
   `app.config[...]` under the matching uppercase key (Flask's
   `from_object()` only picks up uppercase attributes, so it can't be used
   directly here).
-- **Data storage**: no real database yet. Use in-memory Python data structures
-  behind a small data-access layer (see below) so it's a localized swap later.
-  Do not introduce a DB/ORM unless explicitly instructed.
+- **Data storage**: SQLite via SQLAlchemy (`src/db/schemas.py`), reached only
+  through the service layer in `src/services/` (see "Data Layer" below).
 - **Photo uploads**: no real file storage yet. Track photo-vault state
   (remaining count, "taken" status) as metadata only — do not implement real
   upload/storage unless explicitly instructed.
@@ -65,6 +64,14 @@ wedding/
 │   │   │                         #   overrides; exposes Config.load(...)
 │   │   └── logging.py            # setup_logging(): rich-based logging
 │   │                             #   handler, called once from main.py
+│   ├── db/
+│   │   ├── schemas.py             # SQLAlchemy engine, SessionLocal, and
+│   │   │                          #   the Guest/Invite tables
+│   │   ├── session.py             # get_db_session(): one request-scoped
+│   │   │                          #   session on `g`, closed app-wide
+│   │   └── seed.py                # `make seed`: idempotent fake invites
+│   ├── services/                  # GuestService, InviteService,
+│   │                              #   RsvpService: all DB access
 │   ├── main.py                    # builds the module-level `app = Flask(
 │   │                              #   ...)` singleton directly (no
 │   │                              #   create_app() factory), calls
@@ -82,8 +89,10 @@ wedding/
 │   │   │                            #   main.py imports
 │   │   ├── home.py                   # `home` blueprint: "/" and "/home"
 │   │   ├── rsvp.py                    # `rsvp` blueprint: "/" (GET renders
-│   │   │                              #   search form, POST looks up and
-│   │   │                              #   redirects) + "/<int:guest_id>"
+│   │   │                              #   invite-code form, POST looks up
+│   │   │                              #   and redirects) +
+│   │   │                              #   "/<uuid:invite_id>" (one form
+│   │   │                              #   for every guest on the invite)
 │   │   ├── contact.py                  # `contact` blueprint: "/"
 │   │   ├── itinerary.py                 # `itinerary` blueprint: "/"
 │   │   ├── seating.py                    # `seating` blueprint: "/"
@@ -116,7 +125,7 @@ wedding/
 │   │   ├── home.html
 │   │   ├── contact.html
 │   │   ├── rsvp.html
-│   │   ├── rsvp_guest.html
+│   │   ├── rsvp_invite.html
 │   │   ├── admin.html                  # loops over the admin registry
 │   │   └── admin/
 │   │       └── _macros.html            # generic section/action/field
@@ -229,24 +238,25 @@ per-endpoint template or JS code.
 - The module docstring in `sections.py` has copy-pasteable
   get/update/delete examples.
 
-## Mock Data Layer Rules (planned — not yet implemented)
+## Data Layer
 
-There is no `data/store.py` or any data-access layer in the codebase yet;
-`src/pages/rsvp.py` currently only renders templates and redirects based on
-a raw form-submitted `guest_id` — no real lookup against invitee data. Once
-real invitee/RSVP data is needed, follow this convention:
-
-- All fake/in-memory data should live in `src/data/store.py`, never
-  scattered across route files.
-- Expose data via functions (`get_invitee(token)`, `save_rsvp(token, data)`,
-  `decrement_photo_count(token)`, etc.), not raw dict imports, so swapping in
-  a real database later stays localized.
-- Seed a handful of clearly fake invitees/tokens for local dev and testing.
+- Tables live in `src/db/schemas.py`: an `Invite` (UUID primary key,
+  invite-level `housing_needs`) has many `Guest`s (attendance, plus-one,
+  food preferences, email).
+- Routes never query the database directly. They get the request's session
+  from `db.session.get_db_session()` and call a service in `src/services/`
+  (`RsvpService` for the guest-facing RSVP flow, `GuestService` and
+  `InviteService` for the admin API).
+- Fake data for local dev lives only in `src/db/seed.py` (`make seed`);
+  tests seed their own clearly fake rows.
 
 ## Feature Guidance
 
-- **RSVP** (`/rsvp/<token>`): show the invitee's name; form for attendance,
-  dietary restrictions, plus-ones, housing needs. Validate server-side.
+- **RSVP** (`/rsvp/<invite_id>`): opening the link authenticates the
+  session for that invite; one form covers every guest on it (attendance,
+  plus-one, food preferences, email) plus the invite's housing needs. Saves
+  need that session and the CSRF token, and are validated server-side and
+  saved atomically. The invite API's `rsvp_url` is the link to print.
 - **Day-of info**: schedule/timeline, food/menu, seating chart lookup,
   table-specific conversation-starter questions.
 - **Photo vault** (`/photos/<token>`): fixed allowance (10 shots) per
@@ -281,6 +291,7 @@ make html-lint      # uv run djlint . --profile=jinja
 make ci             # fmt-check + lint + check + test + html-lint
                     #   (full pre-push / CI-parity gate)
 make run-local      # uv run python src/main.py  (run directly, no Docker)
+make seed           # PYTHONPATH=src uv run python -m db.seed  (fake invites)
 make run            # ./run.sh  (tear down + rebuild + run via Docker Compose)
 make dev            # ./run.sh -d  (same, in development mode)
 make docker         # docker compose build
