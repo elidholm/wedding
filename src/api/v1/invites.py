@@ -25,6 +25,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from api.extensions import limiter
 from api.v1.utils import error, json, parse_body
+from db.schemas import Invite
 from db.session import get_db_session
 from models.invite import InviteCreate, InviteRead, InviteUpdate
 from services.invite_service import InvalidInviteError, InviteService
@@ -32,6 +33,21 @@ from services.invite_service import InvalidInviteError, InviteService
 _log = logging.getLogger(__name__)
 
 bp = Blueprint("invites", __name__)
+
+
+def _invite_json(invite: Invite) -> dict[str, object]:
+    """Serialize an invite for an API response, including its absolute RSVP link.
+
+    Args:
+        invite (Invite): The invite record to serialize.
+
+    Returns:
+        dict[str, object]: The invite's JSON-ready fields plus ``rsvp_url``,
+        the personal link to print (e.g. as a QR code) on the invitation.
+    """
+    payload: dict[str, object] = InviteRead.model_validate(invite).model_dump(mode="json")
+    payload["rsvp_url"] = url_for("rsvp.rsvp_invite", invite_id=invite.id, _external=True)
+    return payload
 
 
 def get_invite_service() -> InviteService:
@@ -78,7 +94,7 @@ def list_invites() -> Response:
         return error("Failed to list invites.", 500)
 
     return json(
-        [InviteRead.model_validate(invite).model_dump(mode="json") for invite in invites],
+        [_invite_json(invite) for invite in invites],
         200,
     )
 
@@ -112,7 +128,7 @@ def create_invite() -> Response:
         _log.exception("Failed to create invite")
         return error(str(exc), 400)
 
-    response = json(InviteRead.model_validate(created_invite).model_dump(mode="json"), 201)
+    response = json(_invite_json(created_invite), 201)
     response.headers["Location"] = url_for("invites.get_invite", invite_id=created_invite.id)
     return response
 
@@ -143,7 +159,7 @@ def get_invite(invite_id: UUID) -> Response:
     if invite is None:
         _log.error("Invite %s not found.", invite_id)
         return error("Invite not found.", 404)
-    return json(InviteRead.model_validate(invite).model_dump(mode="json"), 200)
+    return json(_invite_json(invite), 200)
 
 
 @bp.put("/<uuid:invite_id>")
@@ -180,7 +196,7 @@ def update_invite(invite_id: UUID) -> Response:
     if updated_invite is None:
         _log.error("Invite %s not found.", invite_id)
         return error("Invite not found.", 404)
-    return json(InviteRead.model_validate(updated_invite).model_dump(mode="json"), 200)
+    return json(_invite_json(updated_invite), 200)
 
 
 @bp.delete("/<uuid:invite_id>")
