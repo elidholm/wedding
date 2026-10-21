@@ -229,6 +229,15 @@ class TestGetInvite(InvitesApiTestCase):
         self.assertEqual(len(invite_data["guests"]), 1)
         self.assertEqual(invite_data["guests"][0]["name"], "Jane Doe")
 
+    def test_includes_the_invites_absolute_rsvp_link(self):
+        """Test that the invite's JSON includes the absolute RSVP link to print on the invitation."""
+        created = self._create_invite()
+
+        response = self.client.get(f"/api/v1/invites/{created['id']}")
+
+        self.assertEqual(response.get_json()["rsvp_url"], f"http://localhost/rsvp/{created['id']}")
+        self.assertEqual(created["rsvp_url"], f"http://localhost/rsvp/{created['id']}")
+
     def test_returns_404_when_the_invite_does_not_exist(self):
         """Test that GET for a nonexistent invite ID returns a 404 JSON error."""
         response = self.client.get("/api/v1/invites/11111111-2222-3333-4444-555555555555")

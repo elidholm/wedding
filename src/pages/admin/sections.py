@@ -228,14 +228,14 @@ SECTIONS: tuple[AdminSection, ...] = (
             AdminAction(
                 id="list",
                 title="Lista alla inbjudningar",
-                description="Hämta samtliga inbjudningar som just nu finns i databasen.",
+                description="Hämta samtliga inbjudningar som just nu finns i databasen, med varje inbjudans OSA-länk (rsvp_url).",
                 endpoint="invites.list_invites",
                 submit_label="Generera inbjudningslista",
             ),
             AdminAction(
                 id="user",
                 title="Hämta en inbjudan",
-                description="Visa all information om en enskild inbjudan.",
+                description="Visa all information om en enskild inbjudan, inklusive dess OSA-länk (rsvp_url).",
                 endpoint="invites.get_invite",
                 submit_label="Hämta inbjudan",
                 fields=(AdminField("invite_id", "Inbjudan-ID", type="text", location="path", required=True),),
