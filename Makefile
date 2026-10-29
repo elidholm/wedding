@@ -10,8 +10,10 @@ install: ## Sync all dependencies (runtime + dev) via uv
 	uv sync --all-extras --dev
 	uv run pre-commit install
 
-env-init: ## Initialize the .env file with example values
-	cp --update=none .env.example .env
+env-init: ## Initialize .env with a generated local session key, preserving existing files
+	@if [ ! -e .env ]; then \
+		uv run python -c 'from pathlib import Path; import secrets; content = Path(".env.example").read_text(); Path(".env").open("x").write(content.replace("SECRET_KEY=\n", "SECRET_KEY=" + secrets.token_urlsafe(32) + "\n"))'; \
+	fi
 
 fmt: ## Auto-format the codebase with ruff and isort
 	uv run isort .
@@ -59,10 +61,10 @@ stop: ## Stop and remove containers via Docker Compose (./run.sh)
 	./run.sh -s
 
 run-local: ## Run the app directly with uv, without Docker
-	uv run python src/main.py
+	uv run --env-file .env python src/main.py
 
 seed: ## Seed fake invites into the local database and print their RSVP links
-	PYTHONPATH=src uv run python -m db.seed
+	PYTHONPATH=src uv run --env-file .env python -m db.seed
 
 docker: ## Build the Docker image
 	docker compose build
