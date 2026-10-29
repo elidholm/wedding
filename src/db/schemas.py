@@ -7,14 +7,27 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 
 from core.config import get_config
 
 config = get_config()
 
+
+def _ensure_sqlite_parent(db_url: str) -> None:
+    """Create the parent directory for a file-backed SQLite database."""
+    url = make_url(db_url)
+    if url.get_backend_name() != "sqlite" or not url.database or url.database.startswith("file:"):
+        return
+    if url.database != ":memory:":
+        Path(url.database).parent.mkdir(parents=True, exist_ok=True)
+
+
+_ensure_sqlite_parent(config.db_url)
 engine = create_engine(config.db_url, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

@@ -1,11 +1,13 @@
 """Unit tests for the db.schemas module."""
 
+import tempfile
 import unittest
+from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from db.schemas import Base, Guest, Invite, SessionLocal, engine
+from db.schemas import Base, Guest, Invite, SessionLocal, _ensure_sqlite_parent, engine
 
 
 class TestModuleLevelObjects(unittest.TestCase):
@@ -120,6 +122,18 @@ class TestCreateAllAgainstAFreshEngine(unittest.TestCase):
             self.assertEqual(fetched_invite.housing_needs, "Accessible room")
         finally:
             session.close()
+
+    def test_sqlite_database_creates_a_missing_parent_directory(self):
+        """Test that a local SQLite database can use a directory not created yet."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "storage" / "wedding.db"
+            db_url = f"sqlite:///{database_path}"
+
+            _ensure_sqlite_parent(db_url)
+            test_engine = create_engine(db_url)
+            Base.metadata.create_all(bind=test_engine)
+
+            self.assertTrue(database_path.is_file())
 
 
 if __name__ == "__main__":
