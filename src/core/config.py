@@ -17,6 +17,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import secrets
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
@@ -165,7 +166,7 @@ class Config(BaseModel):
             area, or None if not set (in which case admin login is disabled).
             Defaults to None.
         log_level (str): The logging level for the application. Defaults to "INFO".
-        debug (bool): Whether to run the Flask app in debug mode. Defaults to True.
+        debug (bool): Whether to run the Flask app in debug mode. Enabled only for development.
         googlemaps_key (str): The Google Maps API key. Defaults to an empty string.
         db_url (str): The SQLAlchemy database URL. Defaults to a local SQLite file under
             ``storage/``.
@@ -210,7 +211,7 @@ class Config(BaseModel):
             Config: An instance of the Config class with loaded values.
 
         Raises:
-            RuntimeError: If the configuration file does not exist or cannot be loaded.
+            RuntimeError: If the configuration file cannot be loaded or production has no session key.
         """
         if not Path(config_file).exists():
             raise RuntimeError("No configuration file provided.")
@@ -228,6 +229,13 @@ class Config(BaseModel):
                     setattr(config, field, field_type(env_value))
                 except ValueError as e:
                     _log.error(f"Invalid value for {env_var}: {e}")
+
+        config.debug = config.debug and config.flask_env == "development"
+        if not config.secret_key:
+            if config.flask_env == "development":
+                config.secret_key = secrets.token_urlsafe(32)
+            elif config.flask_env == "production":
+                raise RuntimeError("SECRET_KEY must be configured in production.")
 
         return config
 
