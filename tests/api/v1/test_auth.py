@@ -89,6 +89,18 @@ class TestLogin(AuthApiTestCase):
             {"code": "admin_login_disabled", "message": "Admin login is not configured."},
         )
 
+    def test_login_when_admin_password_is_blank_returns_error_json(self):
+        """Test that an empty password from .env disables admin login."""
+        self.config.admin_password = ""
+
+        response = self.client.post("/api/v1/auth/login", json={"password": "anything"})
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(
+            response.get_json(),
+            {"code": "admin_login_disabled", "message": "Admin login is not configured."},
+        )
+
 
 class TestLogout(AuthApiTestCase):
     """Test cases for POST /api/v1/auth/logout."""

@@ -129,7 +129,6 @@ class TestConfigClassLoad(unittest.TestCase):
             ("flask_env", "development"),  # Default value
             ("host", "0.0.0.0"),  # Default value
             ("port", 5000),  # Default value
-            ("secret_key", None),  # Default value
             ("log_level", "INFO"),  # Default value
             ("debug", True),  # Default value
             ("wedding_couple_contact", ContactInfo(email="test@email.com", phone="(+46)70-123 45 67")),
@@ -179,6 +178,33 @@ class TestConfigLoadEnvOverrides(unittest.TestCase):
         """Test that SECRET_KEY in the environment overrides the default secret_key."""
         with patch.dict(os.environ, {"SECRET_KEY": "super-secret"}):
             self.assertEqual(Config.load(self.config_file).secret_key, "super-secret")
+
+    def test_development_generates_missing_secret_key(self) -> None:
+        """Test that only development uses a temporary session key."""
+        with (
+            patch.dict(os.environ, {"FLASK_ENV": "development", "SECRET_KEY": ""}),
+            patch("core.config.secrets.token_urlsafe", return_value="temporary-session-key") as token_urlsafe,
+        ):
+            config = Config.load(self.config_file)
+
+        self.assertEqual(config.secret_key, "temporary-session-key")
+        token_urlsafe.assert_called_once_with(32)
+
+    def test_production_rejects_missing_secret_key(self) -> None:
+        """Test that production never silently generates a session key."""
+        with (
+            patch.dict(os.environ, {"FLASK_ENV": "production", "SECRET_KEY": ""}),
+            self.assertRaisesRegex(RuntimeError, "SECRET_KEY must be configured"),
+        ):
+            Config.load(self.config_file)
+
+    def test_production_preserves_secret_key_and_disables_debug(self) -> None:
+        """Test that production uses the explicit key with debug disabled."""
+        with patch.dict(os.environ, {"FLASK_ENV": "production", "SECRET_KEY": "configured-test-key"}):
+            config = Config.load(self.config_file)
+
+        self.assertEqual(config.secret_key, "configured-test-key")
+        self.assertFalse(config.debug)
 
     def test_wrong_type_env_override_logs_error(self):
         """Test that an environment variable with the wrong type logs an error and does not override."""
