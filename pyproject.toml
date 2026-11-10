@@ -8,21 +8,21 @@ dependencies = [
   "flask-limiter>=4.1.1",
   "flask>=3.0",
   "pydantic-yaml>=1.7.0",
-  "pydantic>=2.14.2",
+  "pydantic>=2.14.3",
   "rich>=15.0.0",
-  "sqlalchemy>=2.1.6",
+  "sqlalchemy>=2.1.8",
 ]
 
 [dependency-groups]
 dev = [
-  "djlint>=1.49.2",
+  "djlint>=1.49.9",
   "isort>=9.0.2",
   "mypy>=2.4.1",
   "pre-commit>=4.7.0",
   "pytest-cov>=7.1.0",
   "pytest-playwright>=0.10.0",
   "pytest>=9.2.0",
-  "ruff>=0.17.3",
+  "ruff>=0.17.4",
   "taplo>=0.9.3",
 ]
 
